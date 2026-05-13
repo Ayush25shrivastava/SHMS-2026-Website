@@ -1,0 +1,7 @@
+ID: 1HpPxwD0BTtRqyGQJK1l62KhjA6BkKXnebr0XfYDXIfA
+WEBHOOK_SECRET: AbCdEFAG123a
+SHEET_NAME:Submissions
+DESTINATION_EMAIL:shms2026@mnnit.ac.in
+
+Deployment ID: AKfycbwP1I_csjFuqmtDBVYQgH07m9gRIzxbID8y7qFJCrm2jVv9fLi2SxrQZlDi51V7oHb8rQ
+URL: https://script.google.com/macros/s/AKfycbwP1I_csjFuqmtDBVYQgH07m9gRIzxbID8y7qFJCrm2jVv9fLi2SxrQZlDi51V7oHb8rQ/exec

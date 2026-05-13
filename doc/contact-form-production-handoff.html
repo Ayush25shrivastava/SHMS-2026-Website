@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHMS-2026 — Production deployment checklist (Linux, Apache)</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0369a1;
+      --accent-soft: #e0f2fe;
+      --border: #cbd5e1;
+      --code-bg: #f8fafc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      padding: clamp(1rem, 3vw, 2rem);
+    }
+    .wrap { max-width: 48rem; margin: 0 auto; }
+    header {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.2rem, 2.8vw, 1.55rem);
+      letter-spacing: -0.02em;
+    }
+    .meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      margin: 1.5rem 0 0.5rem;
+      font-size: 1rem;
+      color: var(--text);
+      border-bottom: 2px solid var(--accent-soft);
+      padding-bottom: 0.35rem;
+    }
+    h2:first-of-type { margin-top: 0; }
+    h3 {
+      margin: 1rem 0 0.35rem;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0.35rem 0 0;
+    }
+    .checklist li {
+      position: relative;
+      padding-left: 1.4rem;
+      margin: 0.28rem 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .checklist li::before {
+      content: "\2610";
+      position: absolute;
+      left: 0;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+    code {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.86em;
+      background: var(--code-bg);
+      padding: 0.1em 0.32em;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+    pre {
+      margin: 0.5rem 0 0;
+      padding: 0.85rem 1rem;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.74rem;
+      line-height: 1.4;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+    }
+    .filetbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      margin-top: 0.4rem;
+    }
+    .filetbl th, .filetbl td {
+      text-align: left;
+      padding: 0.38rem 0.45rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--muted);
+    }
+    .filetbl th[scope="col"] { color: var(--text); font-weight: 600; }
+    .filetbl tr:last-child th, .filetbl tr:last-child td { border-bottom: 0; }
+    footer {
+      margin-top: 2rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>SHMS-2026 — Production deployment checklist</h1>
+      <p class="meta">Target environment: Linux, Apache 2.4, PHP ≥ 5.2.7; publication typically under <code>https://www.mnnit.ac.in/</code> (vhost root or approved subdirectory). Coordinate <code>DocumentRoot</code>, TLS, SFTP, and PHP SAPI with the institute Computer Centre.</p>
+      <p class="meta" style="margin-top:0.5rem;"><strong>JavaScript:</strong> No server-side JavaScript runtime (e.g. Node.js) is required or used on the host; production is PHP-only. If the contact form uses browser-based Sheet delivery (no <code>curl_init</code>), a short script runs in the <em>visitor’s browser</em> only.</p>
+      <p class="meta" style="margin-top:0.5rem;">References: <code>DEPLOY-MNNIT.md</code> (repository root); <a href="google-form-contact-guide.html">doc/google-form-contact-guide.html</a> (contact / Sheet detail).</p>
+    </header>
+
+    <h2>A. Hosting parameters (Computer Centre)</h2>
+    <ul class="checklist">
+      <li>Public base URL recorded (hostname and path if applicable).</li>
+      <li>Filesystem path mapped to URL (<code>DocumentRoot</code> or <code>Alias</code> target).</li>
+      <li>PHP integration documented: <code>mod_php</code> / <code>php-fpm</code> / other; active <code>php.ini</code> or pool file identified.</li>
+      <li>PHP version under Apache confirmed (CLI version may differ).</li>
+      <li>File upload method and credentials recorded.</li>
+      <li>TLS certificate installation and vhost SSL configuration assigned.</li>
+    </ul>
+
+    <h2>B. Application upload</h2>
+    <ul class="checklist">
+      <li>Site root: all <code>*.php</code>, <code>style.css</code>, <code>.htaccess</code>.</li>
+      <li><code>includes/</code>: all shipped <code>.php</code> includes; <code>includes/config.php</code> placed on server (not from public version control if it contains secrets).</li>
+      <li><code>assets/</code>, image directories per release package.</li>
+      <li><code>api/visitors.php</code> deployed (JSON: Flag Counter embed metadata; HTTP 200).</li>
+      <li><code>node_modules/</code> and other development-only trees excluded.</li>
+      <li><code>tools/</code> optional; remove or restrict after checks if required by policy.</li>
+    </ul>
+
+    <h2>C. Configuration — <code>includes/config.php</code></h2>
+    <ul class="checklist">
+      <li>File begins with <code>&lt;?php</code>; valid <code>return array( … );</code> syntax.</li>
+      <li>Created from <code>includes/config.sample.php</code> where no pre-filled file is supplied.</li>
+      <li>Not stored in a public repository with live secrets.</li>
+    </ul>
+
+    <h3>C.1 Contact — <code>form_backend</code> <code>sheet</code></h3>
+    <table class="filetbl">
+      <tr><th scope="col">Key</th><th scope="col">Requirement</th></tr>
+      <tr><th><code>form_backend</code></th><td><code>'sheet'</code></td></tr>
+      <tr><th><code>sheet_webhook_url</code></th><td>HTTPS <code>script.google.com</code> … <code>/exec</code>; update after each new Apps Script deployment version.</td></tr>
+      <tr><th><code>sheet_webhook_secret</code></th><td>Matches Script <code>WEBHOOK_SECRET</code>; length ≥ 12.</td></tr>
+      <tr><th><code>mail_to</code></th><td>Notification recipient; <code>MailApp</code> <strong>To:</strong>; visitor e-mail as <strong>Reply-To</strong>.</td></tr>
+    </table>
+    <pre><code>'contact' =&gt; array(
+    'mail_to'              =&gt; 'shms2026@mnnit.ac.in',
+    'form_backend'         =&gt; 'sheet',
+    'sheet_webhook_url'    =&gt; 'https://script.google.com/macros/s/YOUR_ID/exec',
+    'sheet_webhook_secret' =&gt; 'your-long-secret-matching-script-property',
+),</code></pre>
+    <p class="meta" style="margin-top:0.5rem;">Sheet-mode notifications: <code>MailApp</code> in Apps Script only; <code>smtp_*</code> / <code>mail()</code> do not apply to that path.</p>
+
+    <h3>C.2 Contact delivery (same Web App)</h3>
+    <ul class="checklist">
+      <li><code>curl_init</code> present: server POSTs JSON with <code>secret</code>.</li>
+      <li><code>curl_init</code> absent: browser <code>fetch()</code> after server-side validation; JavaScript required on <code>contact.php</code>; Apps Script from <code>includes/google-sheet-webhook-apps-script.txt</code> deployed; <code>browser_token</code> authorised via <code>WEBHOOK_SECRET</code> when Script property <code>BROWSER_TOKEN</code> is unset.</li>
+    </ul>
+
+    <h3>C.3 Google Sheet / Apps Script (pre-production)</h3>
+    <ul class="checklist">
+      <li>Sheet and target tab (e.g. <strong>Submissions</strong>) ready; <code>SPREADSHEET_ID</code> set in Script properties.</li>
+      <li>Script source matches repository file <code>includes/google-sheet-webhook-apps-script.txt</code>; saved and authorised.</li>
+      <li><code>WEBHOOK_SECRET</code> set; <code>BROWSER_TOKEN</code> set only if a separate browser token is used in <code>config.php</code>.</li>
+      <li>Web app: Execute as <strong>Me</strong>; access <strong>Anyone</strong>; <code>/exec</code> URL copied to <code>sheet_webhook_url</code>.</li>
+    </ul>
+
+    <h3>C.4 Optional — Flag Counter</h3>
+    <ul class="checklist">
+      <li><code>flagcounter</code> keys set per <code>config.sample.php</code> if the badge is required.</li>
+      <li>Third-party image URL approved under institute policy if applicable.</li>
+    </ul>
+
+    <h2>D. Ownership and permissions</h2>
+    <ul class="checklist">
+      <li>Owner/group: web server read identity (e.g. <code>www-data</code> — verify on target image).</li>
+      <li>Directories <code>755</code>; files <code>644</code> unless policy dictates otherwise.</li>
+      <li><code>includes/config.php</code>: restricted (e.g. <code>640</code>, group = web server group).</li>
+    </ul>
+
+    <h2>E. Apache</h2>
+    <ul class="checklist">
+      <li><code>&lt;Directory&gt;</code> for site path: <code>AllowOverride All</code> (or sufficient for <code>DirectoryIndex</code> / <code>.htaccess</code>).</li>
+      <li><code>mod_rewrite</code> enabled if <code>.htaccess</code> rewrite block is used.</li>
+      <li>Vhost or <code>Alias</code> + <code>Directory</code> block matches allocated path; TLS directives per institute standard.</li>
+      <li><code>apache2ctl configtest</code> / <code>httpd -t</code> passes; configuration reloaded.</li>
+    </ul>
+    <pre><code>&lt;VirtualHost *:443&gt;
+    ServerName www.mnnit.ac.in
+    DocumentRoot /var/www/shms2026
+    &lt;Directory /var/www/shms2026&gt;
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    &lt;/Directory&gt;
+&lt;/VirtualHost&gt;</code></pre>
+    <pre><code>Alias /shms2026 /var/www/shms2026
+&lt;Directory /var/www/shms2026&gt;
+    Options -Indexes +FollowSymLinks
+    AllowOverride All
+    Require all granted
+&lt;/Directory&gt;</code></pre>
+
+    <h2>F. PHP</h2>
+    <ul class="checklist">
+      <li>Extensions: <code>json</code>, <code>session</code> (required).</li>
+      <li><code>php-curl</code>: optional; enables server-side Sheet POST when <code>curl_init</code> available.</li>
+      <li><code>session.save_path</code> exists and writable by PHP process.</li>
+      <li>Current <code>contact.php</code> deployed (session starts before HTML output).</li>
+    </ul>
+
+    <h2>G. Network and caching</h2>
+    <ul class="checklist">
+      <li>If server-side cURL used for Sheet: outbound TCP 443 to <code>script.google.com</code> verified from server.</li>
+      <li>If browser-only Sheet delivery: client path to <code>script.google.com</code> verified from representative networks.</li>
+      <li>No full-page cache on <code>contact.php</code> (CDN, reverse proxy, <code>mod_cache</code>).</li>
+    </ul>
+
+    <h2>H. Acceptance tests</h2>
+    <ul class="checklist">
+      <li><code>index.php</code> and at least one inner page load over HTTPS; stylesheet and images load.</li>
+      <li><code>contact.php</code>: form and CAPTCHA render; JavaScript permitted if browser Sheet path applies.</li>
+      <li>Test submission: new Sheet row; e-mail at <code>mail_to</code> with subject prefix <code>[SHMS-2026 Contact]</code>; <strong>Reply-To</strong> = test address.</li>
+      <li>Countdown on home page: IST (<code>includes/shms-page.php</code>); updates on page reload.</li>
+      <li>Flag Counter: visible if enabled in <code>config.php</code>.</li>
+      <li><code>GET …/api/visitors.php</code> → 200 JSON with <code>source</code>, <code>enabled</code>, <code>img_src</code>, <code>stats_href</code> (optional check).</li>
+    </ul>
+    <p class="meta"><code>MailApp</code> sending limits depend on Google account type; institute mail rules may apply to script-originated mail.</p>
+
+    <h2>I. Fault isolation (production)</h2>
+    <table class="filetbl">
+      <tr><th scope="col">Indication</th><th scope="col">Checks</th></tr>
+      <tr><th scope="row">Session / CSRF error</th><td>Current <code>contact.php</code>; no page cache on <code>contact.php</code>; <code>session.save_path</code>; cookie / HTTPS alignment.</td></tr>
+      <tr><th scope="row">Raw PHP or config text in browser</th><td>PHP enabled for vhost; <code>config.php</code> syntax and opening tag.</td></tr>
+      <tr><th scope="row">404</th><td><code>DocumentRoot</code> / <code>Alias</code>; complete upload.</td></tr>
+      <tr><th scope="row"><code>.htaccess</code> ineffective</th><td><code>AllowOverride</code> level.</td></tr>
+      <tr><th scope="row">Sheet / webhook failure</th><td>Secret match; current <code>/exec</code> URL; Web app access; redeployed Script; browser path: JS and connectivity to Google.</td></tr>
+      <tr><th scope="row">cURL SSL error 60</th><td>CA bundle: <code>php.ini</code> <code>curl.cainfo</code> or <code>sheet_webhook_cainfo</code>.</td></tr>
+      <tr><th scope="row">Missing styles</th><td><code>style.css</code> path; subdirectory base URL.</td></tr>
+    </table>
+
+    <h2>J. Repository paths (reference)</h2>
+    <table class="filetbl">
+      <tr><th scope="col">Path</th><th scope="col">Content</th></tr>
+      <tr><th scope="row"><code>includes/config.sample.php</code></th><td>Configuration template.</td></tr>
+      <tr><th scope="row"><code>includes/google-sheet-webhook-apps-script.txt</code></th><td>Apps Script source.</td></tr>
+      <tr><th scope="row"><code>DEPLOY-MNNIT.md</code></th><td>Extended hosting specification.</td></tr>
+      <tr><th scope="row"><code>doc/google-form-contact-guide.html</code></th><td>Contact / Sheet procedures.</td></tr>
+    </table>
+    <p class="meta" style="margin-top:0.75rem;"><code>form_backend</code> <code>sheet_browser</code>: browser delivery even when cURL is present — <a href="google-form-contact-guide.html#browser-to-script">google-form-contact-guide.html#browser-to-script</a>.</p>
+
+    <footer>
+      <code>doc/contact-form-production-handoff.html</code> — March 2026
+    </footer>
+  </div>
+</body>
+</html>

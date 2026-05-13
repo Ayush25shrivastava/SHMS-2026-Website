@@ -1,0 +1,1663 @@
+/**
+ * SHMS-2026 — Registration Web App (Google Apps Script)
+ *
+ * What it does (each POST):
+ *   1) Saves the payment proof file to a Google Drive folder you choose.
+ *   2) Saves a registration summary (HTML) and an official receipt as PDF (A4) in the same folder — PDF layout matches the on-site receipt sheet. QR/seal/logos are injected via short-lived link-shared copies in the same folder (Drive thumbnails) because HtmlService PDF often drops data: URIs and non-Google img URLs; set RECEIPT_SEAL_DRIVE_FILE_ID / logos / or RECEIPT_ASSET_BASE_URL.
+ *   3) Appends one row to a Google Sheet with the form fields + link to that file.
+ *   4) E-mails the registrant with the official receipt PDF (when generated), payment proof, and CC to the conference (CONFIG.OFFICIAL_CC_EMAIL). When the PDF is present, the message body is brief so it does not duplicate the receipt tables (full receipt is only in the PDF); a full HTML summary is still saved in Drive.
+ *
+ * Setup:
+ *   - SPREADSHEET_ID: open your Sheet → URL contains /d/THIS_ID/edit
+ *   - RECEIPT_FOLDER_ID: open the Drive folder → URL contains /folders/THIS_ID
+ *   - SHEET_NAME: tab name (created if missing). First row = column headers (added automatically if sheet is empty).
+ *   - SUBMIT_SECRET: optional; if non-empty, JSON must include the same value in submitSecret (compared trimmed).
+ *   - Browser POST uses Content-Type: text/plain with a JSON body (avoids CORS preflight that application/json triggers).
+ *
+ * Deploy: Deploy → New deployment → Web app → Execute as: Me → Who has access: Anyone.
+ *
+ * Reference (current deployment):
+ *   - Deployment ID: AKfycbxKokuYdzcc5-XHhOnVBVu2kBjuX10O_iXiBIkaGzsBkesZ5bNpyMktjK3fJNRsavYK
+ *   - Web App URL (GET form + POST JSON — use in CONFIG.WEBAPP_EXEC_URL and PHP registration.webhook_url):
+ *     https://script.google.com/macros/s/AKfycbxKokuYdzcc5-XHhOnVBVu2kBjuX10O_iXiBIkaGzsBkesZ5bNpyMktjK3fJNRsavYK/exec
+ *   - Library URL (import into other Apps Script projects only — NEVER use as webhook; anonymous users get Drive sign-in HTML):
+ *     https://script.google.com/macros/library/d/1yzqX_FNVKRYQHr70LCOJjKdZ0uXUbCjtmXuBAsFTIpvw_kW5_5m1GWpp/6
+ * Paste this file as Code.gs. The form HTML is embedded below (registrationHtmlSource_). Set CONFIG.LOAD_REGISTRATION_FROM_PROJECT_FILE
+ * to true only if you add a separate HTML file in the project named exactly "Registration" (File type: HTML).
+ *
+ * Project settings: enable Chrome V8 (embedded HTML uses modern JS).
+ */
+
+var CONFIG = {
+  SPREADSHEET_ID: '1sckcFJFuJhOE1APuk8mW7z8xAFKuSHcP2WvJLv6bbhs',
+  SHEET_NAME: 'Registrations',
+  RECEIPT_FOLDER_ID: '1_5msIMxqS3YMkuYXr1w5CvKyu500bgrp',
+  /**
+   * Public Web App URL: …/script.google.com/macros/s/…/exec (from Deploy → Web app — copy the link without /a/yourdomain/).
+   * Workspace accounts: getUrl() often returns script.google.com/a/domain/... which returns HTML sign-in for anonymous POSTs; when this is set, doGet uses it instead.
+   */
+  WEBAPP_EXEC_URL: 'https://script.google.com/macros/s/AKfycbxKokuYdzcc5-XHhOnVBVu2kBjuX10O_iXiBIkaGzsBkesZ5bNpyMktjK3fJNRsavYK/exec',
+  SUBMIT_SECRET: '',
+  MAX_FILE_BYTES: 5 * 1024 * 1024,
+  ALLOWED_MIME: {
+    'application/pdf': true,
+    'image/png': true,
+    'image/jpeg': true,
+    'image/jpg': true
+  },
+  /**
+   * false (default): use embedded HTML only — no "Registration" HTML file required in the Apps Script project.
+   * true: load from project file named "Registration" (create via + → HTML; paste Registration.html.txt). Falls back to embedded if missing.
+   */
+  LOAD_REGISTRATION_FROM_PROJECT_FILE: false,
+  /**
+   * Conference / secretariat — CC on every registration e-mail to the participant. Comma- or semicolon-separated allowed. Empty = no CC.
+   * The same message includes the official receipt PDF (when generated) and the payment proof attachment.
+   */
+  OFFICIAL_CC_EMAIL: 'shms2026@mnnit.ac.in',
+  /**
+   * When true, MailApp sends one e-mail To: registrant with CC: OFFICIAL_CC_EMAIL — attachments: official receipt PDF (first, if generated) + uploaded payment proof.
+   * When the PDF is generated, the e-mail body is short (no duplicate transaction receipt tables; full receipt is only in the PDF). If PDF generation fails, the full text/HTML summary is sent instead.
+   * First run: authorize the script for “Send email as you”. Daily quotas apply (see Apps Script quotas).
+   */
+  SEND_CONFIRMATION_EMAIL: true,
+  /** Text on the official PDF receipt (match conference site wording). */
+  RECEIPT_EVENT_TITLE: 'International Conference on Structural Health Monitoring Systems (SHMS-2026)',
+  RECEIPT_EVENT_DATES: 'Oct. 15-17, 2026',
+  RECEIPT_VENUE: 'Prayagraj (Allahabad), India',
+  RECEIPT_FOOTER1: 'This is a computer-generated receipt',
+  RECEIPT_FOOTER2: 'SHMS-2026 — SNFCE MNNIT Allahabad · Email: shms2026@mnnit.ac.in · Web: see conference website',
+  /**
+   * Public HTTPS origin of the conference site (no trailing slash). Script UrlFetchApp downloads assets/images/… then re-uploads short-lived link-shared copies so the PDF engine can load them from drive.google.com.
+   * For seal/logos without a public site: set the RECEIPT_*_DRIVE_FILE_ID values below (recommended for PDF QR/seal).
+   */
+  RECEIPT_ASSET_BASE_URL: 'https://mnnit.ac.in/shms2026',
+  /**
+   * Optional Drive file IDs (…/file/d/THIS_ID/view) for seal/logos — copied into the receipt folder as link-shared temp files for PDF rendering. Strongly recommended for seal if RECEIPT_ASSET_BASE_URL is empty.
+   */
+  RECEIPT_SEAL_DRIVE_FILE_ID: '1qxUDlxr8190j8QTUVoSHLqOpCqAiFgg4',
+  RECEIPT_LOGO_MNNIT_DRIVE_FILE_ID: '1RQ_uayvHEXHRyUQzjkYWXN3yfwz02ryd',
+  RECEIPT_LOGO_ISHMS_DRIVE_FILE_ID: '1jUtCRbk4d9DIdlZUqVfgmPsMAc276w1a'
+};
+
+var REGISTRATION_HTML_FILE = 'Registration';
+
+function doGet() {
+  var postUrl = '';
+  try {
+    postUrl = ScriptApp.getService().getUrl();
+  } catch (e) {
+    postUrl = '';
+  }
+  postUrl = trim_(postUrl);
+  var publicExec = trim_(CONFIG.WEBAPP_EXEC_URL || '');
+  if (publicExec && (!postUrl || postUrl.indexOf('/a/') !== -1)) {
+    postUrl = publicExec;
+  }
+  var t;
+  if (CONFIG.LOAD_REGISTRATION_FROM_PROJECT_FILE) {
+    try {
+      t = HtmlService.createTemplateFromFile(REGISTRATION_HTML_FILE);
+    } catch (e1) {
+      t = HtmlService.createTemplate(registrationHtmlSource_());
+    }
+  } else {
+    t = HtmlService.createTemplate(registrationHtmlSource_());
+  }
+  t.postUrl = postUrl;
+  t.submitSecret = CONFIG.SUBMIT_SECRET || '';
+  return t
+    .evaluate()
+    .setTitle('SHMS-2026 Registration')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonResponse_({ ok: false, error: 'empty_body' });
+    }
+    var raw = e.postData.contents;
+    var data;
+    try {
+      data = JSON.parse(raw);
+    } catch (parseErr) {
+      Logger.log('doPost JSON.parse: ' + parseErr);
+      return jsonResponse_({ ok: false, error: 'invalid_json' });
+    }
+    var out = processForm(data);
+    if (!out || typeof out !== 'object' || typeof out.ok !== 'boolean') {
+      Logger.log('doPost: processForm returned invalid object');
+      return jsonResponse_({ ok: false, error: 'internal_error' });
+    }
+    if (!out.ok && (out.error === undefined || out.error === null || String(out.error).trim() === '')) {
+      out.error = 'unknown_error';
+    }
+    return jsonResponse_(out);
+  } catch (err) {
+    Logger.log('doPost: ' + err);
+    return jsonResponse_({ ok: false, error: 'server_error' });
+  }
+}
+
+function validateEmailSimple_(addr) {
+  addr = trim_(addr);
+  if (!addr || addr.indexOf('@') < 1) {
+    return false;
+  }
+  return addr.indexOf('.', addr.indexOf('@')) > addr.indexOf('@');
+}
+
+/** CC list for MailApp: split comma/semicolon, trim, dedupe, drop registrant To address. */
+function buildCcRecipients_(participantEmail, ccRaw) {
+  var raw = trim_(String(ccRaw || ''));
+  if (!raw) {
+    return '';
+  }
+  var pe = String(participantEmail || '').toLowerCase();
+  var parts = raw.split(/[,;]/);
+  var seen = {};
+  var out = [];
+  for (var i = 0; i < parts.length; i++) {
+    var a = trim_(parts[i]);
+    if (!a || !validateEmailSimple_(a)) {
+      continue;
+    }
+    var low = a.toLowerCase();
+    if (low === pe || seen[low]) {
+      continue;
+    }
+    seen[low] = 1;
+    out.push(a);
+  }
+  return out.join(',');
+}
+
+function escapeHtml_(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function parseAmountInrShms_(s) {
+  s = trim_(String(s || '')).replace(/,/g, '');
+  var t = s.replace(/[^\d.]/g, '');
+  if (!t) {
+    return null;
+  }
+  var n = parseFloat(t);
+  if (isNaN(n)) {
+    return null;
+  }
+  return Math.round(n * 100) / 100;
+}
+
+function gstSplitInclusiveInr_(grand) {
+  var rate = 18;
+  grand = Math.round(grand * 100) / 100;
+  var sub = Math.round((grand / (1 + rate / 100)) * 100) / 100;
+  var gst = Math.round((grand - sub) * 100) / 100;
+  return { sub: sub, gst: gst, grand: grand, rate: rate };
+}
+
+function formatInrShms_(n) {
+  if (n == null || isNaN(n)) {
+    return '—';
+  }
+  return 'INR ' + n.toFixed(2);
+}
+
+/** INR with Indian-style grouping (matches registration-receipt-render.php). */
+function formatInrEnInShms_(n) {
+  if (n == null || isNaN(n)) {
+    return '—';
+  }
+  var neg = n < 0;
+  var v = Math.abs(Math.round(Number(n) * 100) / 100);
+  var paise = Math.round((v - Math.floor(v)) * 100);
+  var intPart = String(Math.floor(v));
+  var len = intPart.length;
+  var grouped;
+  if (len <= 3) {
+    grouped = intPart;
+  } else {
+    var last3 = intPart.slice(-3);
+    var rest = intPart.slice(0, -3);
+    var chunks = [];
+    while (rest !== '') {
+      if (rest.length <= 2) {
+        chunks.unshift(rest);
+        rest = '';
+      } else {
+        chunks.unshift(rest.slice(-2));
+        rest = rest.slice(0, -2);
+      }
+    }
+    grouped = chunks.join(',') + ',' + last3;
+  }
+  var ps = paise < 10 ? '0' + paise : String(paise);
+  return 'INR ' + (neg ? '-' : '') + grouped + '.' + ps;
+}
+
+function buildRegistrationSummaryPlain_(p) {
+  p = p || {};
+  var fullName = trim_(p.firstName + ' ' + p.lastName);
+  var lines = [];
+  lines.push('SHMS-2026 — Registration confirmation');
+  lines.push('');
+  lines.push('Receipt No: ' + trim_(p.receiptNo));
+  lines.push('Registration No: ' + trim_(p.registrationNo));
+  lines.push('Submitted (server time): ' + trim_(p.submittedAt));
+  lines.push('');
+  lines.push('Registrant');
+  lines.push('  Name: ' + fullName);
+  lines.push('  Email: ' + trim_(p.email));
+  lines.push('  Phone: ' + trim_(p.phone));
+  lines.push('  Affiliation: ' + trim_(p.affiliation));
+  lines.push('  Category: ' + trim_(p.category));
+  lines.push('');
+  lines.push('Transaction');
+  lines.push('  Transaction ID / UTR: ' + trim_(p.transactionId));
+  lines.push('  Amount paid (as declared, incl. 18% GST): ' + trim_(p.amount || '—'));
+  var num = parseAmountInrShms_(p.amount);
+  if (num != null) {
+    var g = gstSplitInclusiveInr_(num);
+    lines.push('  Base amount (exclusive of GST): ' + formatInrShms_(g.sub));
+    lines.push('  GST @ ' + g.rate + '% (on base): ' + formatInrShms_(g.gst));
+    lines.push('  Total (matches amount deposited): ' + formatInrShms_(g.grand));
+  }
+  lines.push('  Payment channel: ' + trim_(p.paymentChannel));
+  if (trim_(p.notes)) {
+    lines.push('  Notes: ' + trim_(p.notes));
+  }
+  lines.push('');
+  lines.push('Payment proof file (uploaded)');
+  lines.push('  File name: ' + trim_(p.paymentProofFileName));
+  lines.push('  Link: ' + trim_(p.paymentProofUrl));
+  lines.push('');
+  lines.push('A copy of this summary is stored in the conference Google Drive folder.');
+  lines.push('The payment proof is attached to this e-mail.');
+  lines.push('');
+  lines.push('— SHMS-2026 Secretariat');
+  return lines.join('\n');
+}
+
+function buildRegistrationSummaryHtml_(p) {
+  p = p || {};
+  var fullName = escapeHtml_(trim_(p.firstName + ' ' + p.lastName));
+  var num = parseAmountInrShms_(p.amount);
+  var gstBlock = '';
+  if (num != null) {
+    var g = gstSplitInclusiveInr_(num);
+    gstBlock =
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Base (excl. GST)</td><td style="padding:6px 8px;border:1px solid #cbd5e1;text-align:right;">' +
+      escapeHtml_(formatInrShms_(g.sub)) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">GST @ ' +
+      g.rate +
+      '% (on base)</td><td style="padding:6px 8px;border:1px solid #cbd5e1;text-align:right;">' +
+      escapeHtml_(formatInrShms_(g.gst)) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;font-weight:bold;">Total paid (incl. GST)</td><td style="padding:6px 8px;border:1px solid #cbd5e1;text-align:right;font-weight:bold;">' +
+      escapeHtml_(formatInrShms_(g.grand)) +
+      '</td></tr>';
+  }
+  return (
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;color:#0f172a;">' +
+      '<h1 style="font-size:18px;color:#0f2847;">SHMS-2026 — Registration confirmation</h1>' +
+      '<table style="border-collapse:collapse;margin:0 0 16px;max-width:560px;">' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;width:200px;"><b>Receipt No</b></td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.receiptNo) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;"><b>Registration No</b></td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.registrationNo) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;"><b>Submitted</b></td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.submittedAt) +
+      '</td></tr>' +
+      '</table>' +
+      '<h2 style="font-size:15px;">Registrant</h2>' +
+      '<table style="border-collapse:collapse;margin:0 0 16px;max-width:560px;">' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;width:200px;">Name</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      fullName +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Email</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.email) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Phone</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.phone) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Affiliation</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.affiliation) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Category</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.category) +
+      '</td></tr>' +
+      '</table>' +
+      '<h2 style="font-size:15px;">Transaction</h2>' +
+      '<table style="border-collapse:collapse;margin:0 0 16px;max-width:560px;">' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;width:200px;">Transaction ID / UTR</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.transactionId) +
+      '</td></tr>' +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Amount (declared, incl. GST)</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.amount || '—') +
+      '</td></tr>' +
+      gstBlock +
+      '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Payment channel</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+      escapeHtml_(p.paymentChannel) +
+      '</td></tr>' +
+      (trim_(p.notes)
+        ? '<tr><td style="padding:6px 8px;border:1px solid #cbd5e1;">Notes</td><td style="padding:6px 8px;border:1px solid #cbd5e1;">' +
+          escapeHtml_(p.notes) +
+          '</td></tr>'
+        : '') +
+      '</table>' +
+      '<p style="font-size:13px;color:#475569;">Payment proof link: <a href="' +
+      escapeHtml_(p.paymentProofUrl) +
+      '">' +
+      escapeHtml_(p.paymentProofUrl) +
+      '</a></p>' +
+      '<p style="font-size:13px;color:#475569;">A copy of this summary is stored in the conference Google Drive. Your uploaded payment proof is attached to this message.</p>' +
+      '<p style="font-size:13px;">— SHMS-2026 Secretariat</p>' +
+      '</body></html>'
+  );
+}
+
+/**
+ * Plain body when the official receipt PDF is attached — avoids duplicating full transaction / GST tables from buildRegistrationSummaryPlain_ (same content as the PDF).
+ */
+function buildRegistrationEmailBodyPlainWithPdf_(p) {
+  p = p || {};
+  var fullName = trim_(p.firstName + ' ' + p.lastName);
+  var lines = [];
+  lines.push('Hello ' + fullName + ',');
+  lines.push('');
+  lines.push(
+    'Your SHMS-2026 registration is recorded. Transaction and fee details appear only in the attached official receipt PDF (this e-mail does not repeat them, so you do not receive two copies of the same receipt).'
+  );
+  lines.push('');
+  lines.push('Reference — Receipt No: ' + trim_(p.receiptNo));
+  lines.push('          Registration No: ' + trim_(p.registrationNo));
+  lines.push('          Submitted: ' + trim_(p.submittedAt));
+  lines.push('');
+  lines.push('Also attached: your uploaded payment proof file.');
+  lines.push('A registration summary HTML file is saved in the conference Google Drive folder.');
+  lines.push('');
+  lines.push('— SHMS-2026 Secretariat');
+  return lines.join('\n');
+}
+
+/**
+ * HTML body when the official receipt PDF is attached — short reference only; full receipt layout is only in the PDF attachment.
+ */
+function buildRegistrationEmailBodyHtmlWithPdf_(p) {
+  p = p || {};
+  var fullName = escapeHtml_(trim_(p.firstName + ' ' + p.lastName));
+  return (
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;color:#0f172a;">' +
+    '<p style="margin:0 0 12px;">Hello ' +
+    fullName +
+    ',</p>' +
+    '<p style="margin:0 0 14px;">Your SHMS-2026 registration is <strong>recorded</strong>. Transaction, GST, and fee lines appear <strong>only in the attached official receipt PDF</strong> — this message does not repeat them, so you are not sent two copies of the same receipt.</p>' +
+    '<p style="margin:0 0 16px;font-size:13px;color:#334155;">Reference:<br>Receipt No <strong>' +
+    escapeHtml_(p.receiptNo) +
+    '</strong><br>Registration No <strong>' +
+    escapeHtml_(p.registrationNo) +
+    '</strong><br>Submitted: ' +
+    escapeHtml_(p.submittedAt) +
+    '</p>' +
+    '<p style="margin:0;font-size:13px;color:#475569;">Also attached: your <strong>uploaded payment proof</strong>. A summary HTML file is stored in the conference Google Drive folder.</p>' +
+    '</div>'
+  );
+}
+
+function receiptAbsAsset_(rel) {
+  var base = trim_(String(CONFIG.RECEIPT_ASSET_BASE_URL || ''));
+  rel = trim_(String(rel || '')).replace(/^\//, '');
+  if (!base || !rel) {
+    return '';
+  }
+  if (base.slice(-1) === '/') {
+    base = base.slice(0, -1);
+  }
+  return base + '/' + rel;
+}
+
+/** Fetch URL in-script and return data URI so HtmlService PDF embeds images (remote img src often fails in PDF). */
+function httpUrlToDataUri_(url, maxBytes) {
+  url = trim_(String(url || ''));
+  maxBytes = maxBytes || 250000;
+  if (!url || (url.indexOf('https://') !== 0 && url.indexOf('http://') !== 0)) {
+    return '';
+  }
+  try {
+    var resp = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      followRedirects: true,
+      validateHttpsCertificates: true,
+      maxAllowedRedirects: 5
+    });
+    if (resp.getResponseCode() !== 200) {
+      return '';
+    }
+    var blob = resp.getBlob();
+    if (!blob) {
+      return '';
+    }
+    var bytes = blob.getBytes();
+    if (!bytes || bytes.length > maxBytes) {
+      return '';
+    }
+    var ct = blob.getContentType() || 'image/png';
+    if (ct.indexOf('image/') !== 0 && ct !== 'application/octet-stream') {
+      ct = 'image/png';
+    }
+    return 'data:' + ct + ';base64,' + Utilities.base64Encode(bytes);
+  } catch (e) {
+    Logger.log('httpUrlToDataUri_: ' + e);
+    return '';
+  }
+}
+
+function driveFileIdToDataUri_(fileId, maxBytes) {
+  fileId = trim_(String(fileId || ''));
+  maxBytes = maxBytes || 500000;
+  if (!fileId) {
+    return '';
+  }
+  try {
+    var blob = DriveApp.getFileById(fileId).getBlob();
+    if (!blob) {
+      return '';
+    }
+    var bytes = blob.getBytes();
+    if (!bytes || bytes.length > maxBytes) {
+      return '';
+    }
+    var ct = blob.getContentType() || 'image/png';
+    return 'data:' + ct + ';base64,' + Utilities.base64Encode(bytes);
+  } catch (e) {
+    Logger.log('driveFileIdToDataUri_: ' + e);
+    return '';
+  }
+}
+
+function receiptPdfResolveImage_(driveFileId, assetRelativePath) {
+  var d = trim_(String(driveFileId || ''));
+  if (d) {
+    var fromDrive = driveFileIdToDataUri_(d, 500000);
+    if (fromDrive) {
+      return fromDrive;
+    }
+  }
+  var abs = receiptAbsAsset_(assetRelativePath);
+  if (abs) {
+    return httpUrlToDataUri_(abs, 500000);
+  }
+  return '';
+}
+
+function receiptPdfQrDataUri_(paymentProofUrl) {
+  var proof = trim_(String(paymentProofUrl || ''));
+  if (!proof) {
+    return '';
+  }
+  var qrUrl =
+    'https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&data=' +
+    encodeURIComponent(proof);
+  return httpUrlToDataUri_(qrUrl, 120000);
+}
+
+/** UrlFetch → Blob (for publishing into Drive before PDF). */
+function httpUrlToBlob_(url, maxBytes) {
+  url = trim_(String(url || ''));
+  maxBytes = maxBytes || 500000;
+  if (!url || (url.indexOf('https://') !== 0 && url.indexOf('http://') !== 0)) {
+    return null;
+  }
+  try {
+    var resp = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      followRedirects: true,
+      validateHttpsCertificates: true,
+      maxAllowedRedirects: 5
+    });
+    if (resp.getResponseCode() !== 200) {
+      return null;
+    }
+    var blob = resp.getBlob();
+    if (!blob) {
+      return null;
+    }
+    if (blob.getBytes().length > maxBytes) {
+      return null;
+    }
+    return blob;
+  } catch (e) {
+    Logger.log('httpUrlToBlob_: ' + e);
+    return null;
+  }
+}
+
+function driveFileIdToBlob_(fileId, maxBytes) {
+  fileId = trim_(String(fileId || ''));
+  maxBytes = maxBytes || 500000;
+  if (!fileId) {
+    return null;
+  }
+  try {
+    var b = DriveApp.getFileById(fileId).getBlob();
+    if (!b || b.getBytes().length > maxBytes) {
+      return null;
+    }
+    return b;
+  } catch (e) {
+    return null;
+  }
+}
+
+function receiptPdfResolveImageBlob_(driveFileId, assetRelativePath, maxBytes) {
+  maxBytes = maxBytes || 500000;
+  var d = trim_(String(driveFileId || ''));
+  if (d) {
+    var fromDrive = driveFileIdToBlob_(d, maxBytes);
+    if (fromDrive) {
+      return fromDrive;
+    }
+  }
+  var abs = receiptAbsAsset_(assetRelativePath);
+  if (abs) {
+    return httpUrlToBlob_(abs, maxBytes);
+  }
+  return null;
+}
+
+function fetchQrPngBlob_(paymentProofUrl) {
+  var proof = trim_(String(paymentProofUrl || ''));
+  if (!proof) {
+    return null;
+  }
+  var url =
+    'https://api.qrserver.com/v1/create-qr-code/?size=240x240&ecc=M&data=' +
+    encodeURIComponent(proof);
+  return httpUrlToBlob_(url, 150000);
+}
+
+/**
+ * Writes a short-lived image into the receipt folder, link-shared, so HtmlService PDF can load it from drive.google.com.
+ * Pushes the File into tempFiles for trashing after PDF conversion.
+ */
+function publishPdfTempImage_(folder, nameStem, blob, tempFiles) {
+  if (!folder || !blob || !tempFiles) {
+    return '';
+  }
+  try {
+    var ct = String(blob.getContentType() || '');
+    var ext = '.png';
+    if (ct.indexOf('jpeg') !== -1 || ct.indexOf('jpg') !== -1) {
+      ext = '.jpg';
+    } else if (ct.indexOf('gif') !== -1) {
+      ext = '.gif';
+    } else if (ct.indexOf('webp') !== -1) {
+      ext = '.webp';
+    }
+    var safe = String(nameStem || 'img')
+      .replace(/[^\w.-]+/g, '_')
+      .substring(0, 72);
+    blob.setName('__shms_pdf_img_' + safe + '_' + Utilities.getUuid().substring(0, 8) + ext);
+    var f = folder.createFile(blob);
+    f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    tempFiles.push(f);
+    var id = f.getId();
+    return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w400';
+  } catch (e) {
+    Logger.log('publishPdfTempImage_: ' + e);
+    return '';
+  }
+}
+
+/**
+ * Fetches QR + seal/logos, re-uploads as link-shared files in the same folder, returns HTTPS img URLs for the PDF HTML.
+ * HtmlService PDF often omits data: URIs and external non-Google img URLs; Drive thumbnails load reliably.
+ */
+function prepareReceiptPdfImgUrls_(p, folder, receiptNo, tempFiles) {
+  var out = { qrImgUrl: '', sealImgUrl: '', mnnitImgUrl: '', ishmsImgUrl: '' };
+  if (!folder || !tempFiles) {
+    return out;
+  }
+  var stem = String(receiptNo || 'r').replace(/[^\w.-]+/g, '_');
+
+  var qrBlob = fetchQrPngBlob_(p.paymentProofUrl);
+  if (qrBlob) {
+    out.qrImgUrl = publishPdfTempImage_(folder, 'qr_' + stem, qrBlob, tempFiles);
+  }
+
+  var sealBlob = receiptPdfResolveImageBlob_(CONFIG.RECEIPT_SEAL_DRIVE_FILE_ID, 'assets/images/seal.png', 600000);
+  if (sealBlob) {
+    out.sealImgUrl = publishPdfTempImage_(folder, 'seal_' + stem, sealBlob, tempFiles);
+  }
+
+  var mnnitBlob = receiptPdfResolveImageBlob_(CONFIG.RECEIPT_LOGO_MNNIT_DRIVE_FILE_ID, 'assets/images/mnnit-logo.png', 600000);
+  if (mnnitBlob) {
+    out.mnnitImgUrl = publishPdfTempImage_(folder, 'mnnit_' + stem, mnnitBlob, tempFiles);
+  }
+
+  var ishmsBlob = receiptPdfResolveImageBlob_(CONFIG.RECEIPT_LOGO_ISHMS_DRIVE_FILE_ID, 'assets/images/ishms-logo.png', 600000);
+  if (ishmsBlob) {
+    out.ishmsImgUrl = publishPdfTempImage_(folder, 'ishms_' + stem, ishmsBlob, tempFiles);
+  }
+
+  if (tempFiles.length > 0) {
+    Utilities.sleep(400);
+  }
+  return out;
+}
+
+/**
+ * Full HTML document matching registration-receipt.php / shms_registration_receipt_sheet_html (participant-facing receipt snapshot).
+ * @param {object} imgs optional { qrImgUrl, sealImgUrl, mnnitImgUrl, ishmsImgUrl } from prepareReceiptPdfImgUrls_; falls back to data URIs when URLs empty.
+ */
+function buildOfficialReceiptPdfHtml_(p, imgs) {
+  p = p || {};
+  imgs = imgs || {};
+  var fullName = escapeHtml_(trim_(p.firstName + ' ' + p.lastName));
+  var num = parseAmountInrShms_(p.amount);
+  var feeRow = '';
+  var gstLine = '';
+  var grandLine = '';
+  var gstRate = 18;
+  if (num != null) {
+    var g = gstSplitInclusiveInr_(num);
+    feeRow =
+      '<tr><td>Base amount (exclusive of GST)</td><td>' +
+      escapeHtml_(formatInrEnInShms_(g.sub)) +
+      '</td></tr>' +
+      '<tr><td>GST @ ' +
+      gstRate +
+      '% (on base amount)</td><td>' +
+      escapeHtml_(formatInrEnInShms_(g.gst)) +
+      '</td></tr>';
+    gstLine = '';
+    grandLine =
+      '<tr class="shms-receipt-grand"><td>Total amount paid (incl. GST, matches fee deposited)</td><td>' +
+      escapeHtml_(formatInrEnInShms_(g.grand)) +
+      '</td></tr>';
+  } else {
+    feeRow =
+      '<tr><td>Amount paid as declared (incl. GST)</td><td>' +
+      escapeHtml_(String(p.amount || '—')) +
+      '</td></tr>';
+    gstLine = '';
+    grandLine =
+      '<tr class="shms-receipt-grand"><td>Total (incl. taxes as applicable)</td><td>Per declaration above</td></tr>';
+  }
+
+  var qrImgSrc = trim_(imgs.qrImgUrl || '') || receiptPdfQrDataUri_(p.paymentProofUrl);
+  var mnnitImgSrc =
+    trim_(imgs.mnnitImgUrl || '') ||
+    receiptPdfResolveImage_(CONFIG.RECEIPT_LOGO_MNNIT_DRIVE_FILE_ID, 'assets/images/mnnit-logo.png');
+  var ishmsImgSrc =
+    trim_(imgs.ishmsImgUrl || '') ||
+    receiptPdfResolveImage_(CONFIG.RECEIPT_LOGO_ISHMS_DRIVE_FILE_ID, 'assets/images/ishms-logo.png');
+  var sealImgSrc =
+    trim_(imgs.sealImgUrl || '') ||
+    receiptPdfResolveImage_(CONFIG.RECEIPT_SEAL_DRIVE_FILE_ID, 'assets/images/seal.png');
+
+  var logoLeft =
+    mnnitImgSrc !== ''
+      ? '<div class="shms-receipt-head__logo shms-receipt-head__logo--left"><img src="' +
+        escapeHtml_(mnnitImgSrc) +
+        '" alt="MNNIT Allahabad" width="116" height="68"></div>'
+      : '<div class="shms-receipt-head__logo shms-receipt-head__logo--left" aria-hidden="true"></div>';
+  var logoRight =
+    ishmsImgSrc !== ''
+      ? '<div class="shms-receipt-head__logo shms-receipt-head__logo--right"><img src="' +
+        escapeHtml_(ishmsImgSrc) +
+        '" alt="ISHMS" width="116" height="68"></div>'
+      : '<div class="shms-receipt-head__logo shms-receipt-head__logo--right" aria-hidden="true"></div>';
+
+  var aff = trim_(p.affiliation)
+    ? '<div><dt>Affiliation</dt><dd>' + escapeHtml_(p.affiliation) + '</dd></div>'
+    : '';
+
+  var qrBlock = '<div class="shms-receipt-qr"></div>';
+
+  var sealBlock =
+    sealImgSrc !== ''
+      ? '<img src="' + escapeHtml_(sealImgSrc) + '" alt="Official seal" width="140" height="140">'
+      : '';
+
+  var css =
+    '*{box-sizing:border-box;}' +
+    '@page{size:A4 portrait;margin:12mm;}' +
+    'html,body{margin:0;padding:0;background:#fff;color:#0f172a;}' +
+    '.shms-receipt-sheet{background:#fff;color:#0f172a;padding:1.75rem 2rem 2rem;border:1px solid #cbd5e1;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.45;max-width:52rem;margin:0 auto;}' +
+    '.shms-receipt-head{display:flex;justify-content:space-between;align-items:center;gap:0.75rem 1rem;margin-bottom:0.5rem;}' +
+    '.shms-receipt-head__logo{flex:0 0 auto;width:7.5rem;min-height:4rem;display:flex;align-items:center;justify-content:center;}' +
+    '.shms-receipt-head__logo--left{justify-content:flex-start;}' +
+    '.shms-receipt-head__logo--right{justify-content:flex-end;}' +
+    '.shms-receipt-head__logo img{max-height:4.25rem;max-width:7.25rem;width:auto;height:auto;object-fit:contain;display:block;}' +
+    '.shms-receipt-title-block{text-align:center;flex:1;min-width:0;}' +
+    '.shms-receipt-title-block h1{margin:0 0 0.35rem;font-size:1.05rem;font-weight:700;line-height:1.3;}' +
+    '.shms-receipt-title-block .shms-receipt-dates{font-size:0.95rem;margin:0.15rem 0;}' +
+    '.shms-receipt-title-block .shms-receipt-venue{font-size:0.95rem;margin:0;}' +
+    '.shms-receipt-h-receipt{text-align:center;margin:1rem 0 1.25rem;font-size:1.15rem;font-weight:700;text-decoration:underline;letter-spacing:0.04em;}' +
+    '.shms-receipt-dl{margin:0 0 1.25rem;}' +
+    '.shms-receipt-dl>div{display:grid;grid-template-columns:11rem 1fr;gap:0.35rem 1rem;margin-bottom:0.45rem;}' +
+    '.shms-receipt-dl dt{font-weight:600;margin:0;}' +
+    '.shms-receipt-dl dd{margin:0;}' +
+    '.shms-receipt-box{border:1px solid #0f172a;padding:0.85rem 1rem 1rem;margin-bottom:1.5rem;}' +
+    '.shms-receipt-box h2{margin:0 0 0.65rem;font-size:0.95rem;text-decoration:underline;font-weight:700;}' +
+    '.shms-receipt-rows{width:100%;border-collapse:collapse;}' +
+    '.shms-receipt-rows td{padding:0.35rem 0;vertical-align:top;}' +
+    '.shms-receipt-rows td:last-child{text-align:right;font-weight:600;white-space:nowrap;}' +
+    '.shms-receipt-rows tr.shms-receipt-grand td{font-weight:700;padding-top:0.5rem;border-top:1px solid #94a3b8;}' +
+    '.shms-receipt-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:1.5rem;flex-wrap:wrap;margin-top:0.5rem;}' +
+    '.shms-receipt-qr{flex-shrink:0;}' +
+    '.shms-receipt-qr img{display:block;width:100px;height:100px;}' +
+    '.shms-receipt-seal{flex-shrink:0;text-align:center;max-width:160px;}' +
+    '.shms-receipt-seal img{max-width:140px;height:auto;display:block;margin:0 auto 0.25rem;}' +
+    '.shms-receipt-seal .shms-receipt-sig{font-family:Georgia,serif;font-style:italic;color:#1e40af;font-size:1rem;margin-bottom:0.25rem;}' +
+    '.shms-receipt-footer-text{text-align:center;margin-top:1.25rem;font-size:0.8rem;color:#475569;line-height:1.5;}' +
+    '.shms-receipt-footer-text p{margin:0.2rem 0;}';
+
+  return (
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+      css +
+      '</style></head><body>' +
+      '<div class="shms-receipt-sheet" id="shms-receipt-print-area">' +
+      '<div class="shms-receipt-head">' +
+      logoLeft +
+      '<div class="shms-receipt-title-block">' +
+      '<h1>' +
+      escapeHtml_(CONFIG.RECEIPT_EVENT_TITLE) +
+      '</h1>' +
+      '<p class="shms-receipt-dates">' +
+      escapeHtml_(CONFIG.RECEIPT_EVENT_DATES) +
+      '</p>' +
+      '<p class="shms-receipt-venue">' +
+      escapeHtml_(CONFIG.RECEIPT_VENUE) +
+      '</p>' +
+      '</div>' +
+      logoRight +
+      '</div>' +
+      '<div class="shms-receipt-h-receipt">RECEIPT</div>' +
+      '<dl class="shms-receipt-dl">' +
+      '<div><dt>Receipt No</dt><dd>' +
+      escapeHtml_(p.receiptNo) +
+      '</dd></div>' +
+      '<div><dt>Reg. No</dt><dd>' +
+      escapeHtml_(p.registrationNo) +
+      '</dd></div>' +
+      '<div><dt>Name</dt><dd>' +
+      fullName +
+      '</dd></div>' +
+      '<div><dt>Category</dt><dd>' +
+      escapeHtml_(p.category) +
+      '</dd></div>' +
+      '<div><dt>Email</dt><dd>' +
+      escapeHtml_(p.email) +
+      '</dd></div>' +
+      '<div><dt>Phone</dt><dd>' +
+      escapeHtml_(p.phone) +
+      '</dd></div>' +
+      aff +
+      '<div><dt>Transaction ID / UTR</dt><dd>' +
+      escapeHtml_(p.transactionId) +
+      '</dd></div>' +
+      '<div><dt>Payment channel</dt><dd>' +
+      escapeHtml_(p.paymentChannel) +
+      '</dd></div>' +
+      '<div><dt>Date &amp; time</dt><dd>' +
+      escapeHtml_(p.submittedAt) +
+      '</dd></div>' +
+      '</dl>' +
+      '<div class="shms-receipt-box">' +
+      '<h2>Registration category details</h2>' +
+      '<table class="shms-receipt-rows" role="presentation"><tbody>' +
+      feeRow +
+      gstLine +
+      grandLine +
+      '</tbody></table></div>' +
+      '<div class="shms-receipt-foot">' +
+      qrBlock +
+      '<div class="shms-receipt-seal">' +
+      sealBlock +
+      '<div class="shms-receipt-sig" aria-hidden="true">Authorized signatory</div>' +
+      '</div></div>' +
+      '<div class="shms-receipt-footer-text">' +
+      '<p>' +
+      escapeHtml_(CONFIG.RECEIPT_FOOTER1) +
+      '</p><p>' +
+      escapeHtml_(CONFIG.RECEIPT_FOOTER2) +
+      '</p></div></div></body></html>'
+  );
+}
+
+/**
+ * Converts receipt HTML to PDF and saves to Drive. Returns url + blob for e-mail attachment (or error string).
+ * tempPdfImageFiles: short-lived link-shared images used only while rendering PDF; moved to trash in finally.
+ */
+function trySaveReceiptPdfToDrive_(folder, receiptNo, receiptHtmlFull, tempPdfImageFiles) {
+  var out = { url: '', pdfBlob: null, error: '' };
+  var temps = tempPdfImageFiles || [];
+  try {
+    var ho = HtmlService.createHtmlOutput(receiptHtmlFull).setWidth(794).setHeight(1123);
+    var blob = ho.getBlob();
+    var pdf = blob.getAs(MimeType.PDF);
+    var fname = 'SHMS2026_' + receiptNo.replace(/[^\w.-]+/g, '_') + '_Receipt.pdf';
+    pdf.setName(fname);
+    var f = folder.createFile(pdf);
+    out.url = f.getUrl();
+    out.pdfBlob = pdf.copyBlob();
+  } catch (e) {
+    out.error = String(e);
+    Logger.log('trySaveReceiptPdfToDrive_: ' + e);
+  } finally {
+    for (var ti = 0; ti < temps.length; ti++) {
+      try {
+        temps[ti].setTrashed(true);
+      } catch (e2) {
+        Logger.log('trySaveReceiptPdfToDrive_ temp trash: ' + e2);
+      }
+    }
+  }
+  return out;
+}
+
+function processForm(formObject) {
+  formObject = formObject || {};
+
+  if (!trim_(CONFIG.SPREADSHEET_ID) || !trim_(CONFIG.RECEIPT_FOLDER_ID)) {
+    Logger.log('Set CONFIG.SPREADSHEET_ID and CONFIG.RECEIPT_FOLDER_ID');
+    return { ok: false, error: 'config_missing' };
+  }
+
+  if (trim_(CONFIG.SUBMIT_SECRET) && trim_(formObject.submitSecret) !== trim_(CONFIG.SUBMIT_SECRET)) {
+    return { ok: false, error: 'unauthorized' };
+  }
+
+  var firstName = trim_(formObject.firstName);
+  var lastName = trim_(formObject.lastName);
+  var email = trim_(formObject.email);
+  var phone = trim_(formObject.phone);
+  var category = trim_(formObject.category);
+  var transactionId = trim_(formObject.transactionId);
+  var amount = trim_(formObject.amount);
+  var paymentChannel = trim_(formObject.paymentChannel);
+  var affiliation = trim_(formObject.affiliation);
+  var notes = trim_(formObject.notes);
+
+  if (!firstName || !lastName || !email || !phone || !category || !transactionId || !paymentChannel) {
+    return { ok: false, error: 'missing_fields' };
+  }
+
+  var fileBase64 = formObject.fileBase64;
+  var fileName = trim_(formObject.fileName) || 'receipt';
+  var mimeType = String(formObject.mimeType || '').toLowerCase();
+  if (!mimeType || !CONFIG.ALLOWED_MIME[mimeType]) {
+    mimeType = mimeFromFileName_(fileName);
+  }
+
+  if (!fileBase64) {
+    return { ok: false, error: 'missing_file' };
+  }
+
+  if (!CONFIG.ALLOWED_MIME[mimeType]) {
+    return { ok: false, error: 'invalid_file_type' };
+  }
+
+  var bytes;
+  try {
+    bytes = Utilities.base64Decode(fileBase64);
+  } catch (e2) {
+    return { ok: false, error: 'invalid_base64' };
+  }
+
+  if (!bytes || bytes.length === 0) {
+    return { ok: false, error: 'empty_file' };
+  }
+  if (bytes.length > CONFIG.MAX_FILE_BYTES) {
+    return { ok: false, error: 'file_too_large' };
+  }
+
+  var ext = extensionFromMime_(mimeType, fileName);
+  var safeFirst = slug_(firstName);
+  var safeLast = slug_(lastName);
+  var safeTx = slug_(transactionId);
+  var driveName = safeFirst + '_' + safeLast + '_' + safeTx + ext;
+
+  try {
+    // --- 1) Receipt → Google Drive ---
+    var folder = DriveApp.getFolderById(CONFIG.RECEIPT_FOLDER_ID);
+    var blob = Utilities.newBlob(bytes, mimeType, driveName);
+    var file = folder.createFile(blob);
+    var fileUrl = file.getUrl();
+
+    // --- 2) User data + receipt link → Google Sheet ---
+    var sheet = getOrCreateSheet_();
+    ensureHeaders_(sheet);
+    sheet.appendRow([
+      new Date(),
+      firstName,
+      lastName,
+      email,
+      phone,
+      affiliation,
+      category,
+      transactionId,
+      amount,
+      paymentChannel,
+      notes,
+      fileUrl,
+      driveName,
+      mimeType
+    ]);
+
+    var seq = nextShmsRegistrationSeq_();
+    var receiptNo = 'SHMS2026/R' + padReceiptSeq_(seq);
+    var registrationNo = 'SHMS2026/' + padReceiptSeq_(seq);
+    var submittedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+
+    var summaryPayload = {
+      receiptNo: receiptNo,
+      registrationNo: registrationNo,
+      submittedAt: submittedAt,
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      phone: phone,
+      affiliation: affiliation,
+      category: category,
+      transactionId: transactionId,
+      amount: amount,
+      paymentChannel: paymentChannel,
+      notes: notes,
+      paymentProofUrl: fileUrl,
+      paymentProofFileName: driveName
+    };
+
+    var summaryPlain = buildRegistrationSummaryPlain_(summaryPayload);
+    var summaryHtml = buildRegistrationSummaryHtml_(summaryPayload);
+
+    var summarySafeName = 'Registration_' + receiptNo.replace(/[^\w.-]+/g, '_') + '_record.html';
+    var summaryBlob = Utilities.newBlob(summaryHtml, 'text/html; charset=UTF-8', summarySafeName);
+    var summaryFile = folder.createFile(summaryBlob);
+    var summaryFileUrl = summaryFile.getUrl();
+
+    var receiptPdfTempImages = [];
+    var receiptPdfImgUrls = prepareReceiptPdfImgUrls_(summaryPayload, folder, receiptNo, receiptPdfTempImages);
+    var receiptPdfHtml = buildOfficialReceiptPdfHtml_(summaryPayload, receiptPdfImgUrls);
+    var receiptPdfResult = trySaveReceiptPdfToDrive_(folder, receiptNo, receiptPdfHtml, receiptPdfTempImages);
+
+    var confirmationEmailSent = false;
+    var confirmationEmailError = '';
+    var pdfFileName = 'SHMS2026_' + receiptNo.replace(/[^\w.-]+/g, '_') + '_Receipt.pdf';
+    var hasPdf = !!(receiptPdfResult && receiptPdfResult.pdfBlob);
+    var ccList = buildCcRecipients_(email, CONFIG.OFFICIAL_CC_EMAIL);
+
+    if (CONFIG.SEND_CONFIRMATION_EMAIL && validateEmailSimple_(email)) {
+      try {
+        var attachments = [];
+        if (hasPdf) {
+          attachments.push(receiptPdfResult.pdfBlob.copyBlob().setName(pdfFileName));
+        }
+        attachments.push(blob.copyBlob());
+
+        var pdfPlainIntro = hasPdf
+          ? 'Official SHMS-2026 payment receipt (PDF) is attached: ' +
+            pdfFileName +
+            '.' +
+            (ccList ? ' The conference secretariat is copied (CC) on this message.\n\n' : '\n\n')
+          : receiptPdfResult.error
+          ? 'Note: the official PDF receipt could not be generated (' +
+            receiptPdfResult.error +
+            '). Your uploaded payment proof is still attached.\n\n'
+          : '';
+
+        var pdfHtmlIntro = hasPdf
+          ? '<p style="font-size:14px;line-height:1.5;margin:0 0 12px;border-left:4px solid #0369a1;padding-left:12px;"><strong>Official payment receipt</strong> — attached as PDF <span style="font-family:Consolas,monospace;font-size:12px;">' +
+            escapeHtml_(pdfFileName) +
+            '</span>.' +
+            (ccList
+              ? ' The conference address is <strong>copied (CC)</strong> on this message.</p>'
+              : '</p>')
+          : receiptPdfResult.error
+          ? '<p style="font-size:13px;color:#b45309;margin:0 0 14px;">The official PDF receipt could not be generated automatically. Your registration is saved and your <strong>uploaded payment proof</strong> is attached below.</p>'
+          : '';
+
+        var drivePlain =
+          receiptPdfResult.url && hasPdf
+            ? '\nSame receipt PDF in Google Drive: ' + receiptPdfResult.url + '\n'
+            : receiptPdfResult.url && !hasPdf
+            ? '\nReceipt PDF in Google Drive: ' + receiptPdfResult.url + '\n'
+            : '';
+
+        var driveHtml =
+          receiptPdfResult.url
+            ? '<p style="font-size:13px;margin:14px 0 0;"><a href="' +
+              escapeHtml_(receiptPdfResult.url) +
+              '">' +
+              (hasPdf ? 'Open the same receipt PDF in Google Drive' : 'Download receipt PDF from Google Drive') +
+              '</a></p>'
+            : '';
+
+        var mailBody;
+        var mailHtmlBody;
+        if (hasPdf) {
+          mailBody =
+            pdfPlainIntro +
+            buildRegistrationEmailBodyPlainWithPdf_(summaryPayload) +
+            drivePlain +
+            '\nAttachments: (1) Official receipt PDF  (2) Your payment proof upload\n';
+          mailHtmlBody =
+            pdfHtmlIntro + buildRegistrationEmailBodyHtmlWithPdf_(summaryPayload) + driveHtml;
+        } else {
+          mailBody = pdfPlainIntro + summaryPlain + drivePlain;
+          mailHtmlBody = pdfHtmlIntro + summaryHtml + driveHtml;
+        }
+
+        var mailOpts = {
+          to: email,
+          subject: hasPdf
+            ? 'SHMS-2026 — Official registration receipt (PDF attached) — ' + receiptNo
+            : 'SHMS-2026 — Registration received (' + receiptNo + ')',
+          body: mailBody,
+          htmlBody: mailHtmlBody,
+          attachments: attachments
+        };
+        if (ccList) {
+          mailOpts.cc = ccList;
+        }
+        MailApp.sendEmail(mailOpts);
+        confirmationEmailSent = true;
+      } catch (mailEx) {
+        confirmationEmailError = String(mailEx);
+        Logger.log('Registration confirmation e-mail failed: ' + mailEx);
+      }
+    }
+
+    return {
+      ok: true,
+      fileUrl: fileUrl,
+      receiptNo: receiptNo,
+      registrationNo: registrationNo,
+      submittedAt: submittedAt,
+      summaryFileUrl: summaryFileUrl,
+      receiptPdfUrl: receiptPdfResult.url || undefined,
+      receiptPdfError: receiptPdfResult.error || undefined,
+      confirmationEmailSent: confirmationEmailSent,
+      confirmationEmailError: confirmationEmailError || undefined
+    };
+  } catch (ex) {
+    Logger.log('processForm save error: ' + ex);
+    return { ok: false, error: 'save_failed' };
+  }
+}
+
+function jsonResponse_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getOrCreateSheet_() {
+  var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  var sh = ss.getSheetByName(CONFIG.SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(CONFIG.SHEET_NAME);
+  }
+  return sh;
+}
+
+function ensureHeaders_(sheet) {
+  if (sheet.getLastRow() > 0) {
+    return;
+  }
+  sheet.appendRow([
+    'Timestamp',
+    'First name',
+    'Last name',
+    'Email',
+    'Phone',
+    'Affiliation',
+    'Registration category',
+    'Transaction ID',
+    'Amount paid',
+    'Payment channel',
+    'Notes',
+    'Receipt file URL',
+    'Receipt file name',
+    'MIME type'
+  ]);
+}
+
+/**
+ * Monotonic sequence in ScriptProperties (with lock) so receipt numbers are never reused after sheet row deletes.
+ * To continue from existing data after changing from row-based IDs: set script property SHMS2026_REGISTRATION_SEQ
+ * to the last used integer (Project Settings → Script properties), then redeploy.
+ */
+function padReceiptSeq_(n, width) {
+  width = width || 6;
+  var s = String(n);
+  while (s.length < width) {
+    s = '0' + s;
+  }
+  return s;
+}
+
+function nextShmsRegistrationSeq_() {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var key = 'SHMS2026_REGISTRATION_SEQ';
+    var cur = parseInt(props.getProperty(key) || '0', 10);
+    if (isNaN(cur) || cur < 0) {
+      cur = 0;
+    }
+    var next = cur + 1;
+    props.setProperty(key, String(next));
+    return next;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function trim_(s) {
+  return String(s == null ? '' : s).replace(/^\s+|\s+$/g, '');
+}
+
+function slug_(s) {
+  s = trim_(s);
+  if (!s) {
+    return 'x';
+  }
+  return s.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 80) || 'x';
+}
+
+function mimeFromFileName_(name) {
+  var ext = String(name || '')
+    .toLowerCase()
+    .replace(/^.*\./, '');
+  if (ext === 'pdf') {
+    return 'application/pdf';
+  }
+  if (ext === 'png') {
+    return 'image/png';
+  }
+  if (ext === 'jpg' || ext === 'jpeg') {
+    return 'image/jpeg';
+  }
+  return '';
+}
+
+function extensionFromMime_(mime, originalName) {
+  if (mime === 'application/pdf') {
+    return '.pdf';
+  }
+  if (mime === 'image/png') {
+    return '.png';
+  }
+  if (mime === 'image/jpeg' || mime === 'image/jpg') {
+    return '.jpg';
+  }
+  var m = String(originalName || '').toLowerCase().match(/(\.[a-z0-9]+)$/);
+  return m ? m[1] : '';
+}
+function registrationHtmlSource_() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #0369a1;
+      --accent-soft: #e0f2fe;
+      --border: #cbd5e1;
+      --danger: #b91c1c;
+      --ok: #047857;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      padding: 1rem 1rem 2rem;
+    }
+    .wrap { max-width: 36rem; margin: 0 auto; }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .lede { margin: 0 0 1rem; color: var(--muted); font-size: 0.95rem; }
+    form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem 1.35rem;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 0.75rem 0 0.25rem;
+      color: var(--text);
+    }
+    label:first-of-type { margin-top: 0; }
+    .hint { font-size: 0.78rem; font-weight: 400; color: var(--muted); }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 4rem; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .file-row { margin-top: 0.75rem; }
+    input[type="file"] {
+      width: 100%;
+      font-size: 0.88rem;
+    }
+    .err {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin: 0.35rem 0 0;
+    }
+    .actions { margin-top: 1.25rem; }
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9, #0369a1);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    button[type="submit"]:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .status {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+    .status--busy {
+      display: block;
+      background: var(--accent-soft);
+      color: var(--text);
+      border: 1px solid rgba(3, 105, 161, 0.2);
+    }
+    .status--ok {
+      display: block;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+    .status--fail {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(3, 105, 161, 0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: shms-spin 0.7s linear infinite;
+      vertical-align: -0.15em;
+      margin-right: 0.35rem;
+    }
+    @keyframes shms-spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>SHMS-2026 — Registration</h1>
+    <p class="lede">Complete after payment. Upload your transaction receipt (PDF, JPG, or PNG, max 5&nbsp;MB).</p>
+
+    <form id="shms-reg-form" novalidate>
+      <? if (submitSecret) { ?>
+      <input type="hidden" name="submitSecret" id="submitSecret" value="<?= submitSecret ?>">
+      <? } ?>
+
+      <label for="firstName">First name <span class="hint">(required)</span></label>
+      <input type="text" id="firstName" name="firstName" required maxlength="120" autocomplete="given-name">
+
+      <label for="lastName">Last name <span class="hint">(required)</span></label>
+      <input type="text" id="lastName" name="lastName" required maxlength="120" autocomplete="family-name">
+
+      <label for="email">Email <span class="hint">(required)</span></label>
+      <input type="email" id="email" name="email" required maxlength="254" autocomplete="email">
+
+      <label for="phone">Phone <span class="hint">(required, with country code)</span></label>
+      <input type="tel" id="phone" name="phone" required maxlength="40" autocomplete="tel">
+
+      <label for="affiliation">Affiliation / institution</label>
+      <input type="text" id="affiliation" name="affiliation" maxlength="300">
+
+      <label for="category">Registration category <span class="hint">(required)</span></label>
+      <select id="category" name="category" required>
+        <option value="">Select…</option>
+        <option>Students / Research Scholars</option>
+        <option>Faculty Members</option>
+        <option>ISHMS Members</option>
+        <option>Industry Participants</option>
+        <option>Foreign Delegates</option>
+      </select>
+
+      <label for="transactionId">Transaction ID / UTR / reference <span class="hint">(required)</span></label>
+      <input type="text" id="transactionId" name="transactionId" required maxlength="120" autocomplete="off">
+
+      <label for="amount">Amount paid (incl. 18% GST) <span class="hint">(numeric, total deposited)</span></label>
+      <input type="text" id="amount" name="amount" inputmode="decimal" maxlength="20" placeholder="e.g. 8850">
+
+      <label for="paymentChannel">Payment channel <span class="hint">(required)</span></label>
+      <select id="paymentChannel" name="paymentChannel" required>
+        <option value="">Select…</option>
+        <option>UPI</option>
+        <option>IMPS</option>
+        <option>NEFT</option>
+        <option>RTGS</option>
+        <option>Net banking / bank transfer</option>
+        <option>International wire / SWIFT</option>
+        <option>Other</option>
+      </select>
+
+      <label for="notes">Notes for secretariat (optional)</label>
+      <textarea id="notes" name="notes" maxlength="2000"></textarea>
+
+      <div class="file-row">
+        <label for="receipt">Transaction receipt <span class="hint">(required — PDF, PNG, JPG, JPEG — max 5&nbsp;MB)</span></label>
+        <input type="file" id="receipt" name="receipt" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required>
+        <p id="file-err" class="err" style="display:none;"></p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Submit registration</button>
+      </div>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+    (function () {
+      var POST_URL = <?= JSON.stringify(postUrl || '') ?>;
+      var MAX_BYTES = 5 * 1024 * 1024;
+      var ALLOW_EXT = { pdf: 1, png: 1, jpg: 1, jpeg: 1 };
+      var ALLOW_MIME = { 'application/pdf': 1, 'image/png': 1, 'image/jpeg': 1, 'image/jpg': 1 };
+
+      var form = document.getElementById('shms-reg-form');
+      var btn = document.getElementById('submit-btn');
+      var statusEl = document.getElementById('status');
+      var fileErr = document.getElementById('file-err');
+      var receipt = document.getElementById('receipt');
+
+      function tryParseJson(text) {
+        if (text == null || typeof text !== 'string') {
+          return null;
+        }
+        var t = text.replace(/^\uFEFF/, '').trim();
+        if (!t) {
+          return null;
+        }
+        try {
+          return JSON.parse(t);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function showStatus(kind, msg) {
+        statusEl.className = 'status';
+        if (kind === 'busy') {
+          statusEl.classList.add('status--busy');
+          statusEl.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + msg;
+        } else if (kind === 'ok') {
+          statusEl.classList.add('status--ok');
+          statusEl.textContent = msg;
+        } else if (kind === 'fail') {
+          statusEl.classList.add('status--fail');
+          statusEl.textContent = msg;
+        } else {
+          statusEl.style.display = 'none';
+          statusEl.textContent = '';
+          return;
+        }
+        statusEl.style.display = 'block';
+      }
+
+      function fileExt(name) {
+        var i = name.lastIndexOf('.');
+        return i >= 0 ? name.substring(i + 1).toLowerCase() : '';
+      }
+
+      function validateFile(file) {
+        fileErr.style.display = 'none';
+        fileErr.textContent = '';
+        if (!file) {
+          fileErr.textContent = 'Please choose a receipt file.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        if (file.size > MAX_BYTES) {
+          fileErr.textContent = 'File must be 5 MB or smaller.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        var ext = fileExt(file.name);
+        if (!ALLOW_EXT[ext]) {
+          fileErr.textContent = 'Only PDF, PNG, JPG, or JPEG files are allowed.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        var mt = (file.type || '').toLowerCase();
+        if (mt && !ALLOW_MIME[mt]) {
+          fileErr.textContent = 'Invalid file type. Use PDF, PNG, JPG, or JPEG.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        return true;
+      }
+
+      receipt.addEventListener('change', function () {
+        validateFile(receipt.files[0]);
+      });
+
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!POST_URL) {
+          showStatus('fail', 'Web app URL is not available. Redeploy the script as a Web app and open this page from the deployment URL.');
+          return;
+        }
+
+        var file = receipt.files[0];
+        if (!validateFile(file)) {
+          return;
+        }
+
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        btn.disabled = true;
+        showStatus('busy', 'Uploading…');
+
+        var reader = new FileReader();
+        reader.onerror = function () {
+          btn.disabled = false;
+          showStatus('fail', 'Could not read the file. Please try again.');
+        };
+        reader.onload = function () {
+          var result = reader.result;
+          if (typeof result !== 'string' || result.indexOf(',') < 0) {
+            btn.disabled = false;
+            showStatus('fail', 'Could not encode the file.');
+            return;
+          }
+          var base64 = result.split(',')[1];
+          var mimeType = file.type || 'application/octet-stream';
+
+          var payload = {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            affiliation: document.getElementById('affiliation').value.trim(),
+            category: document.getElementById('category').value.trim(),
+            transactionId: document.getElementById('transactionId').value.trim(),
+            amount: document.getElementById('amount').value.trim(),
+            paymentChannel: document.getElementById('paymentChannel').value.trim(),
+            notes: document.getElementById('notes').value.trim(),
+            fileName: file.name,
+            mimeType: mimeType,
+            fileBase64: base64
+          };
+          var sec = document.getElementById('submitSecret');
+          if (sec) {
+            payload.submitSecret = sec.value.trim();
+          }
+
+          /* text/plain + JSON body avoids CORS preflight (application/json triggers OPTIONS; Apps Script often does not answer it). */
+          fetch(POST_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload),
+            mode: 'cors',
+            credentials: 'omit',
+            redirect: 'follow'
+          })
+            .then(function (r) {
+              return r.text().then(function (text) {
+                return { okHttp: r.ok, status: r.status, text: text };
+              });
+            })
+            .then(function (res) {
+              var text = res.text;
+              var j = tryParseJson(text);
+              btn.disabled = false;
+              if (!res.okHttp && (res.status === 401 || res.status === 403)) {
+                showStatus('fail', 'Access denied by the registration service. Redeploy the Web app as “Execute as: Me” and “Who has access: Anyone”, then use the new /exec URL.');
+                return;
+              }
+              if (!j) {
+                var raw = (text || '').trim();
+                var msg =
+                  'The server did not return JSON — so the browser got HTML or plain text instead of {"ok":…}. ';
+                if (!raw) {
+                  msg +=
+                    'The response was empty. Redeploy the Web app, confirm “Who has access: Anyone” (or anyone with the link), and open the form only from the live /exec URL — not the library link or the editor Preview.';
+                } else if (/^<\s*!DOCTYPE/i.test(raw) || /^<\s*html/i.test(raw)) {
+                  msg +=
+                    'The reply looks like a full HTML page (often a Google sign-in or “access denied” page). Fix: Deploy → Web app → set “Who has access” to Anyone or Anyone with Google account, Execute as: Me, and use a URL ending in /exec (not /dev). This form is posting to: ' +
+                    (POST_URL || '(unknown — redeploy the Web app)') +
+                    '. If that URL is an old deployment, paste the latest Code.gs from the site repo and deploy a new version.';
+                } else if (/sign in to continue|accounts\.google\.com/i.test(raw)) {
+                  msg +=
+                    'The reply mentions signing in. Anonymous users must be allowed to invoke the Web app, or they will never get JSON back.';
+                } else {
+                  msg += 'Start of response: “' + raw.substring(0, 100).replace(/\s+/g, ' ') + '…” ';
+                }
+                msg += ' HTTP status: ' + res.status + '. ';
+                msg +=
+                  'If the conference registration page offers an on-site form (“Submit on this website”), use that — the server posts to Google for you. ';
+                msg += 'Email shms2026@mnnit.ac.in with your receipt if it keeps failing.';
+                showStatus('fail', msg);
+                return;
+              }
+              if (j.ok === true) {
+                form.reset();
+                showStatus('ok', 'Registration complete.');
+                return;
+              }
+              var code =
+                j.error !== undefined && j.error !== null && String(j.error).trim() !== ''
+                  ? String(j.error).trim()
+                  : 'no_error_field';
+              var errMap = {
+                unauthorized:
+                  'Submission was rejected (secret mismatch). If this form was opened from the institute site, ask the web admin to align submitSecret with the Apps Script SUBMIT_SECRET.',
+                missing_fields: 'Please fill in all required fields.',
+                missing_file: 'Please attach your transaction receipt.',
+                invalid_file_type: 'Receipt must be a PDF, PNG, JPG, or JPEG file.',
+                invalid_base64: 'Could not read the uploaded file. Try another file or format.',
+                empty_file: 'The uploaded file appears empty.',
+                file_too_large: 'Receipt must be 5 MB or smaller.',
+                bad_request: 'Invalid request.',
+                empty_body: 'Invalid request.',
+                invalid_json: 'The server could not read the request (invalid JSON). Try again or email shms2026@mnnit.ac.in with your receipt.',
+                internal_error: 'Registration handler returned an invalid response. Check Apps Script → Executions.',
+                unknown_error: 'Registration failed for an unknown reason. Check Apps Script → Executions (failed run).',
+                server_error: 'Registration script crashed. Check Apps Script → Executions for the stack trace.',
+                no_error_field:
+                  'The server returned failure without an error code (HTTP ' +
+                  res.status +
+                  '). Often the Web App URL is wrong, or a proxy returned HTML/JSON that is not from Apps Script. Open Apps Script → Executions.',
+                config_missing:
+                  'The registration server is not configured (spreadsheet or Drive folder ID missing in Apps Script CONFIG). Contact the web admin.',
+                save_failed:
+                  'Could not save to Drive or the Sheet (check Apps Script Executions log: folder ID, spreadsheet ID, and your account permissions). Email shms2026@mnnit.ac.in with your receipt.'
+              };
+              var friendly = errMap[code];
+              if (
+                !friendly &&
+                (code.indexOf('Exception:') === 0 ||
+                  /^([A-Za-z]+Error|SyntaxError|TypeError|ReferenceError)\b/.test(code))
+              ) {
+                friendly =
+                  'Server error while saving. Check Apps Script → Executions for details, or email shms2026@mnnit.ac.in with your receipt.';
+              }
+              if (!friendly && !res.okHttp) {
+                friendly =
+                  'HTTP ' +
+                  res.status +
+                  ' from registration service. Redeploy the Web app (Execute as: Me, access: Anyone), confirm the /exec URL, or email shms2026@mnnit.ac.in with your receipt.';
+              }
+              var err = friendly || code || 'Submission failed. Please try again or email shms2026@mnnit.ac.in.';
+              showStatus('fail', err);
+            })
+            .catch(function () {
+              btn.disabled = false;
+              showStatus(
+                'fail',
+                'Could not complete the request (network, browser extension, or firewall). Try another browser or network, or open the registration form from the published /exec link. Email shms2026@mnnit.ac.in with your receipt if it keeps failing.'
+              );
+            });
+        };
+        reader.readAsDataURL(file);
+      });
+    })();
+  </script>
+</body>
+</html>
+`;
+}

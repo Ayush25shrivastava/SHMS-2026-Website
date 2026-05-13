@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHMS-2026 — Contact form, e-mail, and institute (Linux / Apache) deployment</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0369a1;
+      --accent-soft: #e0f2fe;
+      --border: #cbd5e1;
+      --code-bg: #f8fafc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      padding: clamp(1rem, 3vw, 2rem);
+    }
+    .wrap {
+      max-width: 46rem;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      letter-spacing: -0.02em;
+    }
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+    ol.steps {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+    ol.steps > li {
+      counter-increment: step;
+      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.25rem 1.25rem 3.25rem;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      position: relative;
+    }
+    ol.steps > li::before {
+      content: counter(step);
+      position: absolute;
+      left: 1rem;
+      top: 1.2rem;
+      width: 1.75rem;
+      height: 1.75rem;
+      line-height: 1.75rem;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 999px;
+    }
+    ol.steps h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+    }
+    ol.steps p, ol.steps ul {
+      margin: 0.5rem 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    ol.steps ul {
+      padding-left: 1.2rem;
+      color: var(--text);
+    }
+    ol.steps li li {
+      margin: 0.25rem 0;
+    }
+    kbd {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85em;
+      padding: 0.1em 0.35em;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--code-bg);
+    }
+    kbd, code, .code {
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 0.88em;
+    }
+    code {
+      background: var(--code-bg);
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    pre {
+      margin: 0.75rem 0 0;
+      padding: 1rem;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+    }
+    .note {
+      margin-top: 2rem;
+      padding: 1rem 1.15rem;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      color: #78350f;
+    }
+    .note strong { color: #451a03; }
+    .tip {
+      margin: 1.25rem 0 0;
+      padding: 1rem 1.15rem;
+      background: var(--accent-soft);
+      border: 1px solid rgba(3, 105, 161, 0.2);
+      border-radius: 10px;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+    .tip strong { color: var(--accent); }
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    a { color: var(--accent); }
+    .path-section {
+      margin-bottom: 2.75rem;
+    }
+    .path-heading {
+      margin: 0 0 1rem;
+      font-size: clamp(1.08rem, 2vw, 1.22rem);
+      color: var(--text);
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--accent-soft);
+    }
+    .choose {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    .choose h2 {
+      margin: 0 0 0.65rem;
+      font-size: 1.02rem;
+      color: var(--text);
+    }
+    .choose table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .choose th, .choose td {
+      text-align: left;
+      padding: 0.45rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .choose th { color: var(--muted); font-weight: 600; width: 7rem; }
+    .choose tr:last-child th, .choose tr:last-child td { border-bottom: 0; }
+    .choose .jump {
+      margin: 0.75rem 0 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .impl {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    .impl h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .impl h3 {
+      margin: 1.15rem 0 0.4rem;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+    .impl h3:first-of-type { margin-top: 0; }
+    .impl p, .impl li {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+    .impl ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+    .impl li { margin: 0.25rem 0; }
+    .flow {
+      margin: 0.5rem 0 0;
+      padding: 0.85rem 1rem;
+      background: #0f172a;
+      color: #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .filetbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-top: 0.5rem;
+    }
+    .filetbl th, .filetbl td {
+      text-align: left;
+      padding: 0.4rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .filetbl th { color: var(--muted); font-weight: 600; width: 13rem; }
+    .substeps {
+      margin: 0.5rem 0 0;
+      padding-left: 1.35rem;
+      color: var(--text);
+      font-size: 0.93rem;
+      line-height: 1.55;
+    }
+    .substeps li { margin: 0.4rem 0; color: var(--muted); }
+    .prereq {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin: 0 0 1.25rem;
+      font-size: 0.92rem;
+      color: #14532d;
+    }
+    .prereq strong { color: #166534; }
+    .prereq ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+    .addressee {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .addressee strong { color: var(--text); }
+    .email-deep h3 {
+      margin: 1.25rem 0 0.45rem;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .email-deep h3:first-child { margin-top: 0; }
+    .email-deep p, .email-deep li { font-size: 0.92rem; color: var(--muted); line-height: 1.55; }
+    .email-deep ul { margin: 0.35rem 0 0; padding-left: 1.2rem; }
+    .email-deep table { margin-top: 0.5rem; }
+    .deploy-block h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.08rem;
+      color: var(--text);
+    }
+    .deploy-block ol.main-deploy {
+      margin: 0.5rem 0 0;
+      padding-left: 1.35rem;
+      color: var(--muted);
+      font-size: 0.93rem;
+      line-height: 1.6;
+    }
+    .deploy-block ol.main-deploy > li { margin: 0.55rem 0; }
+    .deploy-block .sub {
+      margin: 0.35rem 0 0;
+      padding-left: 1.2rem;
+      font-size: 0.9rem;
+      list-style: disc;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>SHMS-2026 — Contact form setup &amp; e-mail configuration</h1>
+      <p class="lede">The public site always shows the <strong>PHP contact form</strong> on <code>contact.php</code> (layout, CAPTCHA, CSRF). Submissions may be delivered either by PHP mail on the institute server or by a server-side POST to <strong>Google Apps Script</strong> (Sheet log plus <code>MailApp</code> notification with visitor <strong>Reply-To</strong>). The Sheet workflow does <strong>not</strong> use an embedded Google Form. <strong>If the Google Sheet and Apps Script are already configured and localhost testing is done,</strong> use the self-contained production guide <a href="contact-form-production-handoff.html">contact-form-production-handoff.html</a> (same folder as this file). Full-site hosting notes: <code>DEPLOY-MNNIT.md</code> at repository root. Below: extended reference for the <strong>institute web administrator</strong>, including optional Sheet-from-scratch steps.</p>
+    </header>
+
+    <div class="addressee deploy-block" id="deployment-overview">
+      <strong>Audience.</strong> These instructions are addressed to the <strong>designated institute web administrator</strong> (typically coordinated through the <a href="https://mnnit.ac.in/computercentre/" target="_blank" rel="noopener noreferrer">MNNIT Computer Centre</a>). The SHMS‑2026 organising team has validated the application on localhost; production behaviour depends on Apache, PHP, and network settings on the institute <strong>Linux</strong> host. The institute’s public web pages do not publish internal Apache virtual-host templates; the steps below follow <strong>standard Apache&nbsp;2.4 on Linux</strong> and must be reconciled with the exact allocation (document root, subdomain, PHP handler) supplied by the Computer Centre.
+      <h2>Part A — Deployment on institute Linux hosting (<code>www.mnnit.ac.in</code>)</h2>
+      <p style="margin:0; color: var(--muted); font-size: 0.92rem;">Execute in order. Skip any step already satisfied by the host’s standard image.</p>
+      <ol class="main-deploy">
+        <li><strong>Obtain hosting parameters from the Computer Centre.</strong> Request: target URL (site root or subdirectory), filesystem path (<code>DocumentRoot</code> or alias target), supported PHP version, method of upload (SFTP, SCP, rsync, or internal pipeline), whether PHP runs as <strong>mod_php</strong>, <strong>php-fpm</strong>, or another SAPI, and TLS certificate practice for the vhost.</li>
+        <li><strong>Upload the deployable tree.</strong> Copy the project without development-only trees (e.g. omit <code>node_modules</code>). Preserve <code>.htaccess</code>, all root <code>*.php</code>, <code>includes/</code>, <code>assets/</code>, <code>style.css</code>, and <code>api/</code>. On the server, create <code>includes/config.php</code> from <code>includes/config.sample.php</code>; never publish repository secrets.</li>
+        <li><strong>Set ownership and permissions.</strong> Assign the document tree to the user/group required by Apache (often <code>www-data</code> on Debian/Ubuntu; institute images may differ). Typical practice: directories <code>755</code>, files <code>644</code>; restrict <code>includes/config.php</code> to the web user (e.g. <code>640</code>) so credentials are not world-readable.</li>
+        <li><strong>Configure Apache for the allocated path.</strong> Ensure a <code>&lt;Directory&gt;</code> (or <code>&lt;VirtualHost&gt;</code>) block allows <code>AllowOverride All</code> (or equivalent) so the project’s <code>.htaccess</code> can set <code>DirectoryIndex index.php</code> and optional <code>mod_rewrite</code> rules. Example pattern (adjust paths and <code>ServerName</code> per allocation):
+          <pre style="margin-top:0.5rem;"><code># Illustrative only — confirm with Computer Centre
+&lt;VirtualHost *:443&gt;
+    ServerName www.mnnit.ac.in
+    DocumentRoot /var/www/shms2026
+    &lt;Directory /var/www/shms2026&gt;
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    &lt;/Directory&gt;
+    # SSL/TLS directives per institute standard
+&lt;/VirtualHost&gt;</code></pre>
+          If the site lives in a <strong>subdirectory</strong> of an existing vhost, use an <code>Alias</code> (e.g. <code>Alias /shms2026 /var/www/shms2026</code>) with a matching <code>&lt;Directory&gt;</code> block; the application derives its base URL from <code>SCRIPT_NAME</code> and does not require rewriting every link.
+        </li>
+        <li><strong>Enable required modules.</strong> <code>mod_rewrite</code> is recommended because <code>.htaccess</code> enables it for future rules. Run <code>apache2ctl configtest</code> (or <code>httpd -t</code>) before reload.</li>
+        <li><strong>Install and verify PHP extensions.</strong> At minimum: <code>json</code>, <code>session</code>. For Sheet webhook mode: <code>php-curl</code> (package name may be <code>php8.x-curl</code> per version). Ensure <code>session.save_path</code> in <code>php.ini</code> (or pool config for php-fpm) is writable by the PHP process.</li>
+        <li><strong>Allow outbound HTTPS.</strong> From the web server, TCP port <strong>443</strong> to <code>script.google.com</code> must succeed for <code>form_backend</code> <code>sheet</code>. Test from the server: <code>curl -I https://script.google.com</code>.</li>
+        <li><strong>Do not full-page cache <code>contact.php</code>.</strong> Disable caching for that URL in any reverse proxy, CDN, or <code>mod_cache</code> configuration so CSRF tokens and sessions remain valid.</li>
+        <li><strong>Reload Apache and verify.</strong> After <code>sudo systemctl reload apache2</code> (or <code>httpd</code>), open the home page, an inner page, and <code>contact.php</code>; submit a test message if Sheet or PHP mail is configured.</li>
+      </ol>
+      <p style="margin:0.75rem 0 0; font-size:0.9rem; color: var(--muted);"><strong>Note.</strong> The Computer Centre’s <a href="https://mnnit.ac.in/computercentre/index.php/software-resources" target="_blank" rel="noopener noreferrer">software resources</a> page references common server platforms (e.g. CentOS, Ubuntu); exact packages and service names depend on the OS image in use.</p>
+    </div>
+
+    <div class="addressee" id="hosting-admin-checklist">
+      <strong>Part B — Configuration checklist for the hosting administrator (application layer).</strong> The Google Sheet, Apps Script project, and Web app deployment (including <code>WEBHOOK_SECRET</code>, <code>SPREADSHEET_ID</code>, and “Who has access: <strong>Anyone</strong>”) are maintained by the organising team. On the institute server, the administrator shall:
+      <ol class="main-deploy" style="list-style: decimal; margin-top: 0.5rem;">
+        <li>Install the site files and <code>includes/config.php</code> as in Part&nbsp;A.</li>
+        <li>For Sheet mode: set <code>form_backend</code> to <code>sheet</code>, and set <code>sheet_webhook_url</code>, <code>sheet_webhook_secret</code>, and <code>mail_to</code> exactly as documented in <a href="#email-messaging">§&nbsp;E-mail messaging configuration</a>.</li>
+        <li>Confirm PHP cURL is loaded in the <strong>same</strong> SAPI as the browser (<code>tools/php-curl-check.php</code> via HTTPS).</li>
+        <li>Ensure <code>contact.php</code> is not served from a static or full-page cache.</li>
+      </ol>
+      <p style="margin:0.65rem 0 0; font-size:0.92rem; color: var(--muted);">When <code>form_backend</code> is <code>sheet</code>, notification e-mail is sent by Google <code>MailApp</code> inside Apps Script, <strong>not</strong> by the institute MTA; SMTP entries in <code>config.php</code> do not affect that path. Use <a href="#email-messaging">§&nbsp;E-mail messaging configuration</a> for a precise breakdown.</p>
+    </div>
+
+    <div class="tip">
+      <strong>What visitors see (sheet backend).</strong> The page uses neutral wording — for example: we receive your message at <code>mail_to</code> and reply to the address you provide. Technical storage details stay in this guide, not on the contact page.
+    </div>
+
+    <div class="choose">
+      <h2>Choose a backend</h2>
+      <table>
+        <tr>
+          <th><a href="#php-mail">PHP mail / SMTP</a></th>
+          <td>Set <code>form_backend</code> to <code>php</code> or omit it. The server sends e-mail using <code>mail()</code> or the <code>smtp_*</code> settings in <code>includes/config.php</code>. Prefer this when institute hosting already delivers mail reliably.</td>
+        </tr>
+        <tr>
+          <th><a href="#sheet-webhook">Sheet webhook</a></th>
+          <td>Set <code>form_backend</code> to <code>sheet</code>. After validation, either PHP <strong>cURL</strong> POSTs JSON (<code>secret</code>) or, if <code>curl_init</code> is missing, the <strong>browser</strong> <code>fetch()</code> POSTs JSON (same <code>sheet_webhook_secret</code> as <code>browser_token</code> when Script <code>BROWSER_TOKEN</code> is unset). The script appends a Sheet row and uses <code>MailApp</code> for <code>mail_to</code>. Redeploy Apps Script from <code>includes/google-sheet-webhook-apps-script.txt</code> after updates.</td>
+        </tr>
+        <tr>
+          <th><a href="#browser-to-script">Sheet (browser)</a></th>
+          <td><code>form_backend</code> = <code>sheet_browser</code>: always browser <code>fetch()</code> after validation (never PHP cURL). Optional <code>sheet_browser_token</code> + <code>BROWSER_TOKEN</code>; or omit <code>sheet_browser_token</code> and use <code>sheet_webhook_secret</code> only. See <a href="#browser-to-script">§&nbsp;Browser → Script</a>.</td>
+        </tr>
+      </table>
+      <p class="jump">Jump: <a href="#deployment-overview">Linux / Apache deployment</a> · <a href="#email-messaging">E-mail configuration</a> · <a href="#browser-to-script">Browser vs PHP to Script</a> · <a href="#implementation">How it works (code)</a> · <a href="#php-mail">PHP mail / SMTP</a> · <a href="#sheet-webhook">Google Sheet tutorial (reference)</a></p>
+    </div>
+
+    <section class="impl" id="browser-to-script">
+      <h2>Browser → Apps Script (no server cURL)</h2>
+      <p style="margin:0 0 0.65rem;">When <code>curl_init</code> is <strong>missing</strong> and <code>form_backend</code> is <code>sheet</code>, the site automatically uses the <strong>browser</strong> to <code>fetch()</code> JSON to the same Web App URL <strong>after</strong> honeypot, CSRF, and CAPTCHA pass — keep <code>sheet_webhook_url</code> and <code>sheet_webhook_secret</code> (12+ characters). The payload includes <code>browser_token</code> (same value as <code>sheet_webhook_secret</code> when <code>sheet_browser_token</code> is unset). Apps Script authorises it if property <code>BROWSER_TOKEN</code> is <strong>not</strong> set and <code>browser_token</code> matches <code>WEBHOOK_SECRET</code> (see <code>includes/google-sheet-webhook-apps-script.txt</code>).</p>
+      <p style="margin:0 0 0.65rem;"><code>form_backend</code> <code>sheet_browser</code> does the same browser delivery <strong>even when</strong> PHP cURL exists. Optional <code>sheet_browser_token</code> matches Script <code>BROWSER_TOKEN</code> when you want a token separate from <code>WEBHOOK_SECRET</code>.</p>
+
+      <h3>Trade-offs (vs <code>sheet</code> with PHP cURL)</h3>
+      <ul>
+        <li><strong>JavaScript required</strong> on <code>contact.php</code> to complete delivery (small inline script). Users with JS disabled see a noscript notice.</li>
+        <li><strong>Token in page:</strong> After validation, the base64 payload includes <code>browser_token</code>. Use a long random <code>sheet_webhook_secret</code> / <code>WEBHOOK_SECRET</code> and monitor the Sheet. Server-side cURL keeps the secret off the wire from the visitor’s DOM when you do not need the browser path.</li>
+        <li><strong>CORS / network:</strong> If the browser blocks cross-origin POST to <code>script.google.com</code>, delivery fails; the UI suggests e-mail.</li>
+      </ul>
+
+      <h3>Default recommendation</h3>
+      <p style="margin:0;">Prefer <strong><code>sheet</code></strong> with PHP cURL when the institute enables it (secret stays server-side). Use automatic browser delivery (still <code>form_backend</code> <code>sheet</code>) or explicit <code>sheet_browser</code> when the host has no cURL or you require browser-only delivery.</p>
+
+      <h3>Other alternatives if cURL is a problem</h3>
+      <ul>
+        <li>Keep <code>form_backend</code> <code>sheet</code> with <code>sheet_webhook_url</code> + <code>sheet_webhook_secret</code>; redeploy Apps Script from the repo.</li>
+        <li>Enable <strong><code>php-curl</code></strong> on the server if policy allows, for server-side POST.</li>
+        <li><code>form_backend</code> <code>php</code> or <code>google</code> as other mail/embed options.</li>
+        <li>Server-side <code>file_get_contents</code> with a stream context could replace cURL in theory; <strong>not</strong> implemented in this repo.</li>
+      </ul>
+    </section>
+
+    <section class="impl email-deep" id="email-messaging">
+      <h2>E-mail messaging configuration (detailed — for deployment on www.mnnit.ac.in)</h2>
+      <p style="margin:0 0 0.65rem;">Use this section to see exactly <strong>which component sends mail</strong> and <strong>which <code>config.php</code> keys matter</strong>. The Sheet and Apps Script project are assumed to be ready; the institute server must still be configured so PHP can reach Google and so the inbox address is correct.</p>
+
+      <h3>1. Two different ways the secretariat receives mail</h3>
+      <table class="filetbl">
+        <tr><th><code>form_backend</code></th><th>Who sends the notification e-mail?</th><th>Typical use on MNNIT hosting</th></tr>
+        <tr><td><code>sheet</code> (recommended with Sheet log)</td><td><strong>Google Apps Script</strong> via <code>MailApp.sendEmail</code> after a successful row append. Either PHP cURL POSTs JSON or the visitor’s browser <code>fetch()</code> POSTs when cURL is missing. Does <strong>not</strong> use <code>mail()</code> or SMTP for that notification.</td><td>No institute MTA required for the notification. If PHP uses cURL, outbound 443 to Google from the server must work; if not, browsers must reach Google and JavaScript must be on <code>contact.php</code>.</td></tr>
+        <tr><td><code>sheet_browser</code></td><td>Same <strong>Apps Script</strong> + <code>MailApp</code>; browser <code>fetch()</code> always. Auth via <code>BROWSER_TOKEN</code> or <code>WEBHOOK_SECRET</code> as <code>browser_token</code> (see § Browser → Script).</td><td>When you want browser delivery even if cURL exists; requires JavaScript on the contact page.</td></tr>
+        <tr><td><code>php</code> (default)</td><td><strong>PHP</strong> on the web server using <code>mail()</code> or the optional <code>smtp_*</code> block in <code>includes/config.php</code>.</td><td>Use when the Computer Centre provides a working local MTA or an approved SMTP relay for <code>shms2026@mnnit.ac.in</code> (or another mailbox).</td></tr>
+      </table>
+      <p style="margin:0.65rem 0 0;"><strong>Important.</strong> If <code>form_backend</code> is <code>sheet</code> or <code>sheet_browser</code>, uncommenting <code>smtp_*</code> in <code>config.php</code> does <strong>not</strong> change how contact notifications are delivered—the script sends them. SMTP is only relevant for <code>php</code> mode.</p>
+
+      <h3>2. Sheet mode — how the inbox and Reply-To are determined</h3>
+      <p style="margin:0;">When a visitor submits the form, PHP builds JSON that always includes <code>mail_to</code> taken from <code>includes/config.php</code> → <code>'contact'['mail_to']</code> (validated as an e-mail address). The Apps Script (see <code>includes/google-sheet-webhook-apps-script.txt</code>) uses this priority for the <strong>To:</strong> field of the notification:</p>
+      <ol class="substeps" style="margin-top:0.5rem;">
+        <li><code>data.mail_to</code> from the JSON (i.e. your <code>config.php</code> <code>mail_to</code>) — <strong>primary</strong>;</li>
+        <li>if missing, the script property <code>DESTINATION_EMAIL</code> (optional fallback in Apps Script Project Settings);</li>
+        <li>if still missing, the hard-coded default <code>shms2026@mnnit.ac.in</code> inside the script.</li>
+      </ol>
+      <p style="margin:0.65rem 0 0;"><strong>Reply-To.</strong> The script always sets <code>replyTo</code> to the visitor’s e-mail from the form. When secretariat staff click <strong>Reply</strong> in their mail client, the reply is addressed to the visitor, not to the webhook.</p>
+      <p style="margin:0.65rem 0 0;"><strong>Subject line.</strong> The script builds: <code>[SHMS-2026 Contact]</code> + topic label + <code> — </code> + the visitor’s subject field.</p>
+      <p style="margin:0.65rem 0 0;"><strong>Body.</strong> Plain text: name, e-mail, topic, role, urgency, subject, full message, then IP and user-agent for support diagnostics.</p>
+
+      <h3>3. What the hosting administrator must set in <code>includes/config.php</code> (Sheet mode)</h3>
+      <p style="margin:0;">Create <code>includes/config.php</code> from <code>includes/config.sample.php</code> on the server (never commit secrets to a public repository). Inside <code>'contact' =&gt; array( … )</code> set at minimum:</p>
+      <pre style="margin-top:0.5rem;"><code>'form_backend'         =&gt; 'sheet',
+'sheet_webhook_url'    =&gt; 'https://script.google.com/macros/s/…/exec',
+'sheet_webhook_secret' =&gt; '…same string as WEBHOOK_SECRET in Apps Script…',
+'mail_to'              =&gt; 'shms2026@mnnit.ac.in',</code></pre>
+      <ul>
+        <li><code>mail_to</code> — The conference secretariat address that should receive <strong>every</strong> notification. It is both shown in user-facing copy (where applicable) and embedded in the JSON for the script.</li>
+        <li><code>sheet_webhook_secret</code> — Must match <code>WEBHOOK_SECRET</code> in Apps Script <strong>exactly</strong> (no spaces, same case).</li>
+        <li><code>sheet_webhook_url</code> — The current Web app URL ending in <code>/exec</code>; redeploy a <strong>New version</strong> in Apps Script after code changes.</li>
+      </ul>
+      <p style="margin:0.5rem 0 0;"><strong>Optional (server-side only).</strong> <code>sheet_webhook_cainfo</code> — absolute path to a CA bundle (e.g. <code>cacert.pem</code>) if PHP reports SSL/cURL error 60 on the institute host. <code>mail_from</code>, <code>mail_envelope_from</code>, <code>smtp_*</code>, and <code>mail_log_path</code> apply to <strong>PHP mail mode</strong>, not to Sheet webhook delivery.</p>
+
+      <h3>4. PHP mail mode (<code>form_backend</code> omitted or <code>'php'</code>) — when e-mail is sent by the server</h3>
+      <p style="margin:0;">Use this mode if the organising team prefers all mail to originate from the institute stack instead of Google.</p>
+      <table class="filetbl">
+        <tr><th>Config key</th><th>Purpose</th></tr>
+        <tr><td><code>mail_to</code></td><td>Recipient of each contact message (required).</td></tr>
+        <tr><td><code>mail_from</code></td><td>Visible <strong>From:</strong> header (must be an address your host allows to send).</td></tr>
+        <tr><td><code>mail_envelope_from</code></td><td>Optional <code>-f</code> envelope sender for <code>mail()</code> (some MTAs require it to match an authorised domain).</td></tr>
+        <tr><td><code>smtp_host</code>, <code>smtp_port</code>, <code>smtp_encryption</code>, <code>smtp_user</code>, <code>smtp_pass</code>, <code>smtp_from</code>, <code>smtp_timeout</code></td><td>If <code>smtp_host</code> and credentials are set, the site uses SMTP instead of raw <code>mail()</code>. For Google Workspace, use an App Password if 2FA is enabled.</td></tr>
+        <tr><td><code>mail_log_path</code></td><td>Optional absolute path to a writable log file (outside the web root) recording send success/failure for auditing.</td></tr>
+      </table>
+      <p style="margin:0.65rem 0 0;">On a typical Linux host, leaving <code>smtp_*</code> unset uses PHP <code>mail()</code> and the system MTA—confirm with the Computer Centre that the From/relay policy matches <code>mail_from</code> / envelope settings.</p>
+
+      <h3>5. Operational checks before go-live</h3>
+      <ul>
+        <li><strong>Sheet mode:</strong> Submit one test from <code>https://www.mnnit.ac.in/…/contact.php</code> (or the deployed path). Confirm (a) a new row on the <strong>Submissions</strong> tab and (b) one e-mail at <code>mail_to</code> with Reply-To set to the test address.</li>
+        <li><strong>Spam / filtering:</strong> Ask the mail team whether messages from the Apps Script sender need an allow rule; subjects begin with <code>[SHMS-2026 Contact]</code>.</li>
+        <li><strong>Quotas:</strong> <code>MailApp</code> daily limits depend on the Google account type (consumer Gmail vs Workspace). High volume may require PHP mail mode or an institutional relay.</li>
+        <li><strong>Sessions:</strong> <code>contact.php</code> starts the PHP session before HTML output so the CSRF cookie is set. Do not cache <code>contact.php</code> at the CDN or reverse proxy.</li>
+      </ul>
+
+      <h3>6. Google Form iframe mode (brief)</h3>
+      <p style="margin:0;">If <code>form_backend</code> is <code>google</code> and <code>google_form_embed_url</code> is set, the embedded form handles submission; PHP does not send contact mail for that path. E-mail for that option is configured in Google Forms / separate Apps Script—see <code>includes/google-form-email-apps-script.txt</code> in the repository if that mode is used.</p>
+    </section>
+
+    <section class="impl" id="implementation">
+      <h2>How the Sheet approach is implemented (repository)</h2>
+      <p style="margin:0 0 0.5rem;">The browser never calls Google directly. The visitor posts to your PHP site; PHP validates the submission and, when <code>form_backend</code> is <code>sheet</code>, sends one server-side HTTPS POST (JSON) to your Apps Script Web app. The script checks a shared secret, appends a row, then sends mail.</p>
+
+      <h3>End-to-end flow</h3>
+      <div class="flow">Browser → POST contact.php (form fields + csrf + captcha)
+       contact.php → shms_contact_handle_request()  [includes/contact-form.php]
+         → honeypot, CSRF, CAPTCHA, shms_contact_validate_and_collect()
+         → shms_contact_dispatch_submission()
+              → sheet: shms_contact_post_sheet_webhook()  [cURL JSON POST]
+              → php:  shms_contact_send_mail()            [SMTP / mail()]
+       On success: redirect contact.php?sent=1#message-us
+
+Server (PHP) → HTTPS POST → https://script.google.com/macros/s/…/exec
+       Apps Script doPost(e)
+         → JSON.parse(postData), verify data.secret === WEBHOOK_SECRET
+         → SpreadsheetApp.openById(SPREADSHEET_ID), appendRow(...)
+         → MailApp.sendEmail({ to: mail_to, replyTo: visitor email, … })
+         → return JSON { "ok": true }</div>
+
+      <h3>PHP files and roles</h3>
+      <table class="filetbl">
+        <tr><th><code>contact.php</code></th><td>Loads <code>init.php</code>, <code>contact-form.php</code>. Calls <code>shms_contact_handle_request()</code> on each request unless the Google Form iframe mode is active (<code>shms_contact_uses_google_form()</code>).</td></tr>
+        <tr><th><code>includes/contact-form-block.php</code></th><td>Renders the HTML form (or iframe if <code>form_backend</code> is <code>google</code>). For <code>sheet</code>, shows the same PHP form as <code>php</code> with sheet-specific intro text.</td></tr>
+        <tr><th><code>includes/contact-form.php</code></th><td>Config helpers (<code>shms_contact_form_backend</code>, <code>shms_contact_sheet_webhook_url</code>, …), validation, <code>shms_contact_handle_request</code>, <code>shms_contact_dispatch_submission</code>, <code>shms_contact_post_sheet_webhook</code> (builds JSON, <code>curl_exec</code>), error diagnostics for failed webhooks.</td></tr>
+        <tr><th><code>includes/config.php</code></th><td>Sets <code>form_backend</code> = <code>sheet</code>, <code>sheet_webhook_url</code>, <code>sheet_webhook_secret</code>, <code>mail_to</code>. Not committed if it contains secrets.</td></tr>
+        <tr><th><code>includes/google-sheet-webhook-apps-script.txt</code></th><td>Source for the Apps Script project: <code>doPost</code>, row layout, <code>MailApp.sendEmail</code>. Copy into the Sheet-bound script editor, then deploy as Web app.</td></tr>
+        <tr><th><code>tools/php-curl-check.php</code></th><td>Optional: confirm <code>curl_init</code> exists in the same PHP runtime as the site (important for <code>npm run dev</code>).</td></tr>
+      </table>
+
+      <h3>JSON body (PHP → Apps Script)</h3>
+      <p style="margin:0.35rem 0 0;">Posted as <code>Content-Type: application/json; charset=UTF-8</code>. Topic/role/urgency include both keys (form values) and human-readable <code>*_label</code> fields derived from the same maps used by the PHP form.</p>
+      <pre style="margin-top:0.5rem;"><code>{
+  "secret": "matches WEBHOOK_SECRET",
+  "mail_to": "shms2026@mnnit.ac.in",
+  "timestamp_utc": "2026-03-28T12:00:00+00:00",
+  "first_name": "…",
+  "last_name": "…",
+  "email": "visitor@example.com",
+  "topic_key": "registration",
+  "topic_label": "Registration &amp; fees",
+  "role_key": "",
+  "role_label": "",
+  "urgency_key": "normal",
+  "urgency_label": "Standard (we reply within a few working days)",
+  "subject": "…",
+  "message": "…",
+  "ip": "203.0.113.1",
+  "user_agent": "…"
+}</code></pre>
+
+      <h3>Success and errors</h3>
+      <ul>
+        <li>The Web app must respond with JSON containing <code>"ok": true</code>. PHP treats any other body, empty response, or cURL failure as an error and shows a message on the contact page (missing cURL, TLS/firewall, bad URL, secret mismatch, etc.).</li>
+        <li>With <code>form_backend</code> <code>sheet</code>, PHP <code>smtp_*</code> is not used for contact delivery; e-mail is sent by Google <code>MailApp</code> inside the script.</li>
+      </ul>
+    </section>
+
+    <section class="path-section" id="php-mail">
+      <h2 class="path-heading">PHP <code>mail()</code> or SMTP (institute server)</h2>
+      <p style="margin:0; color: var(--muted); font-size: 0.95rem;">Use this path when <code>form_backend</code> is <code>php</code> or omitted. All keys live under <code>'contact'</code> in <code>includes/config.php</code>; see <code>includes/config.sample.php</code> for commented examples.</p>
+      <ol class="substeps" style="margin-top:0.75rem;">
+        <li>Set <code>mail_to</code> to the secretariat inbox (e.g. <code>shms2026@mnnit.ac.in</code>).</li>
+        <li>Optionally set <code>mail_from</code> and <code>mail_envelope_from</code> to addresses your mail infrastructure accepts (SPF/DKIM policies may apply).</li>
+        <li>If the Computer Centre provides SMTP instead of local <code>sendmail</code>, set <code>smtp_host</code>, <code>smtp_port</code> (often 587 with TLS), <code>smtp_encryption</code>, <code>smtp_user</code>, <code>smtp_pass</code>, and optionally <code>smtp_from</code> / <code>smtp_timeout</code>.</li>
+        <li>For diagnostics on a dedicated server, set <code>mail_log_path</code> to a writable path <strong>outside</strong> the web root.</li>
+      </ol>
+      <p style="margin:0.75rem 0 0; color: var(--muted); font-size: 0.95rem;">On Windows development machines, <code>mail()</code> often has no MTA — use SMTP or test Sheet mode where <code>curl_init</code> is available. Production on <strong>www.mnnit.ac.in</strong> should follow the institute mail policy agreed with the organising team.</p>
+    </section>
+
+    <section class="path-section" id="sheet-webhook">
+      <h2 class="path-heading">Google Sheet + webhook — reference setup (Sheet side often already done)</h2>
+      <p style="margin:0 0 1rem; color: var(--muted); font-size: 0.95rem;">The steps below are the full checklist for creating the Sheet, Apps Script, and Web app from scratch. <strong>If the organising team has already completed this work,</strong> the institute hosting administrator need only align <code>includes/config.php</code> on the Linux server with the live <code>/exec</code> URL and secret, complete <a href="#deployment-overview">Part&nbsp;A</a> (Apache / PHP), and verify e-mail using <a href="#email-messaging">§&nbsp;E-mail messaging configuration</a>. Each successful submission on <code>contact.php</code> still (1) adds a <strong>row</strong> in the Sheet and (2) triggers <code>MailApp</code> e-mail with <strong>Reply-To</strong> set to the visitor.</p>
+
+      <div class="prereq">
+        <strong>Before you start</strong>
+        <ul>
+          <li>A Google account with access to <strong>Google Drive</strong> and <strong>Google Sheets</strong>.</li>
+          <li>The SHMS site running on PHP with <strong>cURL</strong> enabled (see Step 6).</li>
+          <li>The script file in this project: <code>includes/google-sheet-webhook-apps-script.txt</code> (open it in a text editor so you can copy everything).</li>
+        </ul>
+      </div>
+
+      <ol class="steps">
+        <li>
+          <h2>Step 1 — Create the Google Sheet (log of responses)</h2>
+          <p>This Sheet is where each contact message will appear as a new row.</p>
+          <ol class="substeps">
+            <li>Open <a href="https://drive.google.com" target="_blank" rel="noopener">Google Drive</a> in your browser.</li>
+            <li>Click <strong>New</strong> → <strong>Google Sheets</strong> → <strong>Blank spreadsheet</strong>.</li>
+            <li>(Optional) Rename the file at the top (e.g. “SHMS-2026 contact responses”).</li>
+            <li>Look at the browser address bar. The URL looks like:<br><code>https://docs.google.com/spreadsheets/d/<strong>LONG_RANDOM_ID</strong>/edit</code></li>
+            <li>Copy only the <strong>LONG_RANDOM_ID</strong> part (between <code>/d/</code> and <code>/edit</code>). This is your <strong>SPREADSHEET_ID</strong>. Keep it in a safe note — you will paste it into Script properties in Step 3.</li>
+          </ol>
+          <p><strong>Note.</strong> You do <em>not</em> need to create a tab named “Submissions” by hand. The script will create a worksheet called <strong>Submissions</strong> automatically the first time it runs, and it will write the column headers on the first row if the sheet is empty.</p>
+        </li>
+
+        <li>
+          <h2>Step 2 — Open Apps Script from that Sheet</h2>
+          <p>The code that receives data from your website lives in the same “project” as your Sheet.</p>
+          <ol class="substeps">
+            <li>With your new Sheet open, click the menu <strong>Extensions</strong> → <strong>Apps Script</strong>.</li>
+            <li>A new tab opens with the Apps Script editor. You may see sample code like <code>function myFunction() { }</code>.</li>
+            <li>Select <strong>all</strong> text in the editor and delete it.</li>
+            <li>Open <code>includes/google-sheet-webhook-apps-script.txt</code> from the SHMS website project on your computer. Select all, copy, paste into the empty Apps Script editor.</li>
+            <li>Click <strong>Save</strong> (disk icon). Give the project a name if asked (e.g. “SHMS contact webhook”).</li>
+          </ol>
+          <p><strong>First-time authorization.</strong> If Google asks you to authorize the script, choose your account and allow the permissions (Sheets, sending mail as you, etc.). This is normal for <code>SpreadsheetApp</code> and <code>MailApp</code>.</p>
+        </li>
+
+        <li>
+          <h2>Step 3 — Script properties (secret + Sheet ID)</h2>
+          <p>These values are <strong>not</strong> hard-coded in the pasted file; you add them in Project settings so you can change them without editing code.</p>
+          <ol class="substeps">
+            <li>In Apps Script, click the <strong>gear icon</strong> (Project Settings) on the left.</li>
+            <li>Scroll to <strong>Script properties</strong> → click <strong>Add script property</strong> for each row below.</li>
+          </ol>
+          <table class="filetbl" style="margin-top:0.65rem;">
+            <tr><th>Property</th><th>Required?</th><th>What to enter</th></tr>
+            <tr><td><code>WEBHOOK_SECRET</code></td><td><strong>Yes</strong></td><td>A long random password (at least <strong>12 characters</strong>). Example style: mix letters and numbers. You will type the <strong>same</strong> value later in <code>includes/config.php</code> as <code>sheet_webhook_secret</code>. Anyone who knows both the Web app URL and this secret could post fake rows — treat it like a password.</td></tr>
+            <tr><td><code>SPREADSHEET_ID</code></td><td><strong>Yes</strong></td><td>The ID you copied in Step 1 (from the Sheet URL). <strong>Not</strong> the “Script ID” shown elsewhere in settings — only the Sheet document ID.</td></tr>
+            <tr><td><code>SHEET_NAME</code></td><td>No</td><td>Leave unset to use the default tab name <code>Submissions</code>. If you set it, the script will create that tab if missing.</td></tr>
+            <tr><td><code>DESTINATION_EMAIL</code></td><td>No</td><td>Optional backup inbox. Normally the PHP site sends <code>mail_to</code> in the JSON body; the script uses that first.</td></tr>
+          </table>
+          <p style="margin-top:0.65rem;">After adding properties, click <strong>Save project</strong> if prompted. You do not need to add properties for every deployment — they stay with the script project.</p>
+        </li>
+
+        <li>
+          <h2>Step 4 — Deploy as a Web app (get the /exec URL)</h2>
+          <p>Deployment creates the HTTPS address your PHP server will call.</p>
+          <ol class="substeps">
+            <li>Click the blue <strong>Deploy</strong> button (top right) → <strong>New deployment</strong>.</li>
+            <li>Click the gear or “Select type” and choose <strong>Web app</strong>.</li>
+            <li>Set <strong>Execute as</strong>: <strong>Me</strong> (your Google account).</li>
+            <li>Set <strong>Who has access</strong>: <strong>Anyone</strong>. This is required: the PHP server is not logged into Google when it sends the POST.</li>
+            <li>Click <strong>Deploy</strong>. You may need to authorize again.</li>
+            <li>Copy the <strong>Web app URL</strong> shown in the dialog. It must end with <code>/exec</code> (production). Keep this URL private like an API endpoint.</li>
+          </ol>
+          <p><strong>After you change the script code</strong>, use <strong>Deploy</strong> → <strong>Manage deployments</strong> → edit the deployment → <strong>Version</strong> “New version” → <strong>Deploy</strong>. Old URLs usually keep working, but the site must always use the current <code>/exec</code> link if Google shows a new one.</p>
+          <p><strong>Do not use</strong> a <code>/dev</code> URL for production; it is only for quick tests.</p>
+        </li>
+
+        <li>
+          <h2>Step 5 — Configure the SHMS website (<code>includes/config.php</code>)</h2>
+          <p>Open <code>includes/config.php</code> in your site and set at least these keys inside <code>'contact' =&gt; array( ... )</code>:</p>
+          <pre><code>'form_backend'         =&gt; 'sheet',
+'sheet_webhook_url'    =&gt; 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec',
+'sheet_webhook_secret' =&gt; 'EXACT_SAME_STRING_AS_WEBHOOK_SECRET',
+'mail_to'              =&gt; 'shms2026@mnnit.ac.in',</code></pre>
+          <ul>
+            <li><code>sheet_webhook_url</code> — paste the full Web app URL from Step 4 (must be <code>https</code>, host <code>script.google.com</code>, path ending in <code>/exec</code>).</li>
+            <li><code>sheet_webhook_secret</code> — must match <code>WEBHOOK_SECRET</code> in Apps Script <strong>exactly</strong> (same characters, no extra spaces).</li>
+            <li><code>mail_to</code> — the inbox that receives the notification e-mail (and appears in the JSON for the script).</li>
+          </ul>
+          <p>Do not commit real secrets to a public Git repository. If the file is shared, rotate <code>WEBHOOK_SECRET</code> and <code>sheet_webhook_secret</code> together and redeploy.</p>
+        </li>
+
+        <li>
+          <h2>Step 6 — Enable PHP cURL and network access</h2>
+          <p>The contact handler uses PHP’s cURL extension to POST JSON to Google.</p>
+          <ol class="substeps">
+            <li><strong>Windows:</strong> Edit the active <code>php.ini</code> (path from <code>php --ini</code> or from opening <code>tools/php-curl-check.php</code> in the browser). Find the line <code>;extension=curl</code> and remove the semicolon so it reads <code>extension=curl</code>. Save. Restart your web server or <code>npm run dev</code>.</li>
+            <li><strong>Linux server:</strong> Install the curl module for your PHP version (e.g. <code>sudo apt install php-curl</code>), then restart PHP-FPM or Apache.</li>
+            <li><strong>Verify:</strong> open <code>tools/php-curl-check.php</code> on the same host as the site (e.g. <code>http://127.0.0.1:8080/tools/php-curl-check.php</code>) until it says <code>curl_init available: YES</code>.</li>
+          </ol>
+
+          <h3 style="margin:1.15rem 0 0.4rem; font-size:0.98rem; color:var(--text);" id="firewall-windows-mcafee">Firewall &amp; McAfee — allow outbound HTTPS to Google</h3>
+          <p style="margin-top:0.35rem;">PHP must be allowed to open <strong>outbound</strong> TCP connections to <strong>port 443</strong> (HTTPS) to Google hosts such as <code>script.google.com</code>. On a typical home PC, this already works; problems usually appear when a third-party firewall or “smart” antivirus blocks <code>php.exe</code> or unknown programs.</p>
+
+          <p><strong>Quick test (before changing rules)</strong></p>
+          <ol class="substeps">
+            <li>Open <strong>PowerShell</strong> or <strong>Command Prompt</strong>.</li>
+            <li>Run: <code>curl.exe -I https://script.google.com</code> in <strong>PowerShell</strong> (PowerShell’s <code>curl</code> is an alias for <code>Invoke-WebRequest</code>, which will prompt for parameters — always use <code>curl.exe</code>). In <strong>Command Prompt (cmd)</strong>, <code>curl -I https://script.google.com</code> is fine.</li>
+            <li>You should see HTTP headers starting with <code>HTTP/1.1</code> or <code>HTTP/2</code> and a status such as <code>302</code> or <code>200</code>. If this command hangs or says “Failed to connect” or “timeout”, the network path to Google is blocked (firewall, proxy, or offline).</li>
+            <li>Optional: <code>curl.exe -I https://www.google.com</code> (PowerShell) — if Google works but only script fails, still check antivirus “web” rules for script URLs.</li>
+          </ol>
+
+          <p><strong>Windows Defender Firewall</strong></p>
+          <ol class="substeps">
+            <li>Press <kbd>Win</kbd> + <kbd>R</kbd>, type <code>wf.msc</code>, Enter → <strong>Windows Defender Firewall with Advanced Security</strong> opens.</li>
+            <li>Click <strong>Outbound Rules</strong> in the left tree. By default Windows allows outbound traffic unless a rule blocks it. Look for any rule that <strong>Blocks</strong> <code>php.exe</code>, your web server (<code>httpd.exe</code>, <code>nginx.exe</code>), or “All programs” on port 443 — if you find one, disable it or change to Allow (only if you understand why it was added).</li>
+            <li>To explicitly <strong>allow</strong> PHP (recommended if you suspect blocking): <strong>Outbound Rules</strong> → <strong>New Rule…</strong> → <strong>Program</strong> → browse to your PHP executable (e.g. <code>C:\Program Files\PHP\current\php.exe</code> or your XAMPP <code>php.exe</code>) → <strong>Allow the connection</strong> → tick <strong>Domain</strong>, <strong>Private</strong>, <strong>Public</strong> as appropriate → name it e.g. “PHP outbound for SHMS”.</li>
+            <li>Alternative path: <strong>Settings</strong> → <strong>Privacy &amp; security</strong> → <strong>Windows Security</strong> → <strong>Firewall &amp; network protection</strong> → <strong>Allow an app through firewall</strong> → <strong>Change settings</strong> → <strong>Allow another app…</strong> → add <code>php.exe</code> and enable <strong>Private</strong> (and <strong>Public</strong> if you use public Wi‑Fi).</li>
+          </ol>
+
+          <p><strong>McAfee (Total Protection / LiveSafe / similar)</strong></p>
+          <p style="margin-top:0.35rem;">Menus vary by version; look for <strong>Firewall</strong>, <strong>PC Security</strong>, or <strong>Web protection</strong>.</p>
+          <ol class="substeps">
+            <li>Open the <strong>McAfee</strong> application from the system tray or Start menu.</li>
+            <li>Find <strong>Firewall</strong> (sometimes under <strong>PC Security</strong> or <strong>Protect your PC</strong>). Open <strong>Settings</strong> or <strong>Firewall settings</strong>.</li>
+            <li>Look for <strong>Program permissions</strong>, <strong>Internet connections for programs</strong>, or <strong>Ports and system services</strong>. Add or locate <strong>php.exe</strong> (full path to the same binary your site uses — check <code>php --ini</code> / Task Manager when <code>npm run dev</code> is running) and set it to <strong>Full</strong> / <strong>Allow</strong> / <strong>Outgoing</strong> access. If McAfee lists “PHP” or “Command line” generically, allow outbound.</li>
+            <li>If there is <strong>Smart Access</strong> or <strong>Net Guard</strong>, temporarily set a less strict mode or add an exception for trusted local development — or add <code>script.google.com</code> to allowed destinations if your product offers a URL allow list (not all do).</li>
+            <li><strong>WebAdvisor / Secure VPN:</strong> These usually affect the <em>browser</em>, not server-side PHP. If only the contact form fails but <code>curl.exe -I https://script.google.com</code> from PowerShell works, the block is likely inside PHP/cURL or the web stack, not McAfee web scanning.</li>
+            <li><strong>Isolation test:</strong> Temporarily turn <strong>McAfee Firewall</strong> off for 1–2 minutes (McAfee → Firewall → turn off), submit the contact form again, then turn the firewall back on. If it works only while off, create a proper <strong>allow rule for php.exe</strong> instead of leaving the firewall disabled.</li>
+          </ol>
+
+          <p><strong>SSL / cURL error 60 (Windows)</strong></p>
+          <p style="margin-top:0.35rem;">If <code>php tools/shms-webhook-cli-test.php</code> shows <code>cURL error 60</code>, PHP cannot verify Google’s certificate (missing CA bundle). The repo includes <code>tools/cacert.pem</code>; the site uses it automatically for Sheet webhook calls. If the file is missing, download <a href="https://curl.se/ca/cacert.pem" target="_blank" rel="noopener">cacert.pem</a> into <code>tools/</code>, or set <code>curl.cainfo</code> in <code>php.ini</code> to that file’s path, or optional <code>sheet_webhook_cainfo</code> in <code>includes/config.php</code>.</p>
+
+          <p><strong>Corporate / institute networks</strong></p>
+          <p style="margin-top:0.35rem;">Some networks block direct HTTPS to the internet or require an HTTP proxy. PHP cURL must be configured for that proxy (<code>curl_setopt</code> <code>CURLOPT_PROXY</code>) — the SHMS project does not set a proxy by default. Ask IT whether outbound <code>443</code> to <code>*.google.com</code> is allowed from your PC or server.</p>
+        </li>
+
+        <li>
+          <h2>Step 7 — Send a test message and confirm you received it</h2>
+          <p>End-to-end test from the visitor’s point of view:</p>
+          <ol class="substeps">
+            <li>Open the contact page: e.g. <code>https://yoursite.example/contact.php</code> or locally <code>http://127.0.0.1:8080/contact.php</code> when using <code>npm run dev</code>.</li>
+            <li>Fill in every required field (name, e-mail, topic, urgency, subject, message).</li>
+            <li>Answer the <strong>Security check</strong> (small maths question) correctly.</li>
+            <li>Click <strong>Send message</strong>. If everything works, you should see the green <strong>Message sent</strong> banner after the page reloads.</li>
+          </ol>
+          <p><strong>Where to look for the response (two places):</strong></p>
+          <ol class="substeps">
+            <li><strong>Google Sheet</strong> → open your file → click the <strong>Submissions</strong> tab (bottom). A new row should appear with timestamp, names, e-mail, topic, role, urgency, subject, message, IP, and browser info.</li>
+            <li><strong>E-mail</strong> → the address in <code>mail_to</code> should receive a plain-text message summarising the enquiry. In Gmail (or similar), click <strong>Reply</strong> — it should address the <strong>visitor’s</strong> e-mail (Reply-To), not only the generic inbox.</li>
+          </ol>
+          <p><strong>Column reference</strong> (first row is headers, then one row per submission):</p>
+          <table class="filetbl">
+            <tr><th>Column (typical)</th><th>Content</th></tr>
+            <tr><td>Timestamp (UTC)</td><td>When the server sent the webhook</td></tr>
+            <tr><td>First name, Last name, Email</td><td>Visitor identity</td></tr>
+            <tr><td>Topic, Role, Urgency</td><td>Human-readable labels from the form</td></tr>
+            <tr><td>Subject, Message</td><td>Enquiry text</td></tr>
+            <tr><td>IP, User agent</td><td>Technical diagnostics</td></tr>
+          </table>
+        </li>
+
+        <li>
+          <h2>Step 8 — If something fails (quick fixes)</h2>
+          <table class="filetbl">
+            <tr><th>Symptom</th><th>What to check</th></tr>
+            <tr><td>Red error about cURL / <code>curl_init</code></td><td>Complete Step 6; restart PHP; confirm <code>php-curl-check.php</code> shows YES in the <strong>browser</strong> (not only CLI).</td></tr>
+            <tr><td><code>cURL error 60</code> / SSL verify failed</td><td>Ensure <code>tools/cacert.pem</code> exists or set <code>curl.cainfo</code> / <code>sheet_webhook_cainfo</code> (Step 6). Run <code>php tools/shms-webhook-cli-test.php</code> after fixing.</td></tr>
+            <tr><td>Error about reaching Google / connection</td><td>Firewall or antivirus — see Step 6 <a href="#firewall-windows-mcafee">Firewall &amp; McAfee</a>; in PowerShell run <code>curl.exe -I https://script.google.com</code> (not <code>curl</code>, which is an alias).</td></tr>
+            <tr><td>Error about webhook response / unexpected response</td><td>Wrong or old <code>/exec</code> URL; redeploy Web app; ensure access is <strong>Anyone</strong>.</td></tr>
+            <tr><td>Error about webhook refused / secret</td><td><code>sheet_webhook_secret</code> and <code>WEBHOOK_SECRET</code> must match exactly.</td></tr>
+            <tr><td>Sheet never updates but mail works (or vice versa)</td><td>Open Apps Script → <strong>Executions</strong> (clock icon) for error lines; fix <code>SPREADSHEET_ID</code> or permissions.</td></tr>
+            <tr><td>No e-mail in inbox</td><td>Spam folder; <code>MailApp</code> daily limits; confirm <code>mail_to</code> in config and in the JSON path in script.</td></tr>
+          </table>
+        </li>
+      </ol>
+    </section>
+
+    <div class="note">
+      <strong>E-mail quotas.</strong> <code>MailApp</code> has daily sending limits (stricter on consumer Gmail than on Google Workspace). For very large volumes, use PHP mail/SMTP on the institute server or ask IT for a relay. Script file in the repo: <code>includes/google-sheet-webhook-apps-script.txt</code>.
+    </div>
+
+    <footer>
+      SHMS-2026 — <code>doc/google-form-contact-guide.html</code> — institute Linux / Apache deployment (<code>www.mnnit.ac.in</code>), e-mail configuration, PHP ↔ Sheet flow, <code>includes/config.sample.php</code>, <code>DEPLOY-MNNIT.md</code>, and <code>includes/google-sheet-webhook-apps-script.txt</code>
+    </footer>
+  </div>
+</body>
+</html>

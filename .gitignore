@@ -1,0 +1,5 @@
+node_modules/
+includes/config.php
+data/
+dev-captured-mail.log
+webhook-debug.log

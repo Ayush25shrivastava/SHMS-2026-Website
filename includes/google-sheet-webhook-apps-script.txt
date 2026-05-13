@@ -1,0 +1,149 @@
+/**
+ * SHMS-2026 — Apps Script WEB APP: JSON POST → Google Sheet row + MailApp email.
+ *
+ * Two delivery paths (same Web App URL):
+ *   A) Server (PHP cURL): JSON includes "secret" === Script property WEBHOOK_SECRET
+ *   B) Browser (fetch): JSON includes sheet_browser: true and browser_token matches BROWSER_TOKEN if set,
+ *      otherwise browser_token may match WEBHOOK_SECRET (institute hosts without php-curl: form_backend sheet).
+ *      The site POSTs the JSON body with Content-Type: text/plain (not application/json) so browsers skip
+ *      a CORS preflight that Google Apps Script often does not handle; doPost still parses JSON.parse(contents).
+ *      Token is still visible in page source after validation — use a long random WEBHOOK_SECRET.
+ *
+ * SETUP
+ * 1. Create a Google Sheet. Copy spreadsheet ID from URL (/d/ID/edit).
+ * 2. Sheet → Extensions → Apps Script. Paste this file. Save.
+ * 3. Script properties (gear → Script properties):
+ *      WEBHOOK_SECRET    = long random string (same as sheet_webhook_secret in config.php)
+ *      BROWSER_TOKEN     = optional; if set, browser posts must use this (or sheet_browser_token in config).
+ *                          If omitted, browser posts may use WEBHOOK_SECRET as browser_token (sheet / no cURL).
+ *      SPREADSHEET_ID    = Sheet ID
+ *      SHEET_NAME        = optional; default Submissions
+ *      DESTINATION_EMAIL = optional fallback if mail_to missing in JSON
+ * 4. Deploy → Web app → Execute as: Me, Who has access: Anyone
+ * 5. Copy /exec URL → config.php sheet_webhook_url
+ * 6. config.php: form_backend => 'sheet' OR 'sheet_browser' (+ tokens as above)
+ */
+
+function doGet() {
+  return ContentService.createTextOutput('SHMS-2026 contact webhook (POST JSON).')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function doPost(e) {
+  try {
+    var body = (e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var data = JSON.parse(body);
+    var props = PropertiesService.getScriptProperties();
+    if (!authorizePayload_(data, props)) {
+      return out({ ok: false, error: 'unauthorized' });
+    }
+    return processSubmission_(data, props);
+  } catch (err) {
+    return out({ ok: false, error: String(err) });
+  }
+}
+
+function trimProp_(v) {
+  return String(v == null ? '' : v).replace(/^\s+|\s+$/g, '');
+}
+
+function authorizePayload_(data, props) {
+  var s = trimProp_(props.getProperty('WEBHOOK_SECRET'));
+  if (s && trimProp_(data.secret) === s) {
+    return true;
+  }
+  if (data.sheet_browser === true) {
+    var bt = trimProp_(props.getProperty('BROWSER_TOKEN'));
+    var tok = trimProp_(data.browser_token);
+    if (bt) {
+      return tok === bt;
+    }
+    if (s && tok === s) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function processSubmission_(data, props) {
+  var sid = props.getProperty('SPREADSHEET_ID');
+  if (!sid) {
+    return out({ ok: false, error: 'missing SPREADSHEET_ID script property' });
+  }
+  var sheetName = props.getProperty('SHEET_NAME') || 'Submissions';
+  var ss = SpreadsheetApp.openById(sid);
+  var sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+  ensureHeaders_(sheet);
+
+  sheet.appendRow([
+    data.timestamp_utc || new Date().toISOString(),
+    data.first_name || '',
+    data.last_name || '',
+    data.email || '',
+    data.topic_label || '',
+    data.role_label || '',
+    data.urgency_label || '',
+    data.subject || '',
+    data.message || '',
+    data.ip || '',
+    data.user_agent || ''
+  ]);
+
+  var dest = data.mail_to || props.getProperty('DESTINATION_EMAIL') || 'shms2026@mnnit.ac.in';
+  var topic = data.topic_label || '';
+  var subjLine = data.subject || '(no subject)';
+  var mailSubject = '[SHMS-2026 Contact] ' + topic + ' — ' + subjLine;
+  var via = data.sheet_browser ? 'browser → Sheet webhook' : 'PHP → Sheet webhook';
+  var mailBody = [
+    'New message from the SHMS-2026 website contact form (' + via + ').',
+    '',
+    'Name: ' + (data.first_name || '') + ' ' + (data.last_name || ''),
+    'Email: ' + (data.email || ''),
+    'Topic: ' + topic,
+    'Role: ' + (data.role_label || '—'),
+    'When you need a reply: ' + (data.urgency_label || ''),
+    'Subject: ' + subjLine,
+    '',
+    'Message:',
+    data.message || '',
+    '',
+    '---',
+    'IP: ' + (data.ip || ''),
+    'UA: ' + (data.user_agent || '')
+  ].join('\n');
+
+  MailApp.sendEmail({
+    to: dest,
+    replyTo: data.email,
+    subject: mailSubject,
+    body: mailBody
+  });
+
+  return out({ ok: true });
+}
+
+function out(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function ensureHeaders_(sheet) {
+  if (sheet.getLastRow() > 0) {
+    return;
+  }
+  sheet.appendRow([
+    'Timestamp (UTC)',
+    'First name',
+    'Last name',
+    'Email',
+    'Topic',
+    'Role',
+    'Urgency',
+    'Subject',
+    'Message',
+    'IP',
+    'User agent'
+  ]);
+}

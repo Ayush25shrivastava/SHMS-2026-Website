@@ -1,0 +1,69 @@
+================================================================================
+SHMS-2026 — Google Apps Script: email secretariat on each Form submission
+================================================================================
+
+1. Create a Google Form (matching fields you need: name, email, topic, message, etc.).
+2. Link responses to a Google Sheet (Form → Responses → Link to Sheets).
+3. Open the Sheet → Extensions → Apps Script.
+4. Paste the script below. Set DESTINATION_EMAIL (e.g. shms2026@mnnit.ac.in).
+5. Adjust getReplyTo_() keys to match YOUR form’s question titles exactly (as they appear
+   in the Sheet header row or in e.namedValues).
+6. Save → Run once → authorize → then add trigger:
+   Triggers → Add trigger → Select function onFormSubmit → Event: From form → On form submit.
+
+--------------------------------------------------------------------------------
+// Apps Script (Google Sheets, bound to the response spreadsheet)
+
+var DESTINATION_EMAIL = 'shms2026@mnnit.ac.in';
+
+function onFormSubmit(e) {
+  if (!e || !e.namedValues) {
+    return;
+  }
+  var nv = e.namedValues;
+  var lines = [];
+  for (var title in nv) {
+    if (nv.hasOwnProperty(title)) {
+      lines.push(title + ': ' + nv[title].join(', '));
+    }
+  }
+  var body = 'New SHMS-2026 contact form submission.\n\n' + lines.join('\n');
+  var replyTo = getReplyTo_(nv);
+
+  var opts = {
+    to: DESTINATION_EMAIL,
+    subject: '[SHMS-2026 Form] New message',
+    body: body
+  };
+  if (replyTo) {
+    opts.replyTo = replyTo;
+  }
+  MailApp.sendEmail(opts);
+}
+
+/** Match the exact column / question titles from your Google Form. */
+function getReplyTo_(namedValues) {
+  var keys = ['Email', 'Email address', 'Your email', 'Contact email'];
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    if (namedValues[k] && namedValues[k][0]) {
+      var v = String(namedValues[k][0]).trim();
+      if (v.indexOf('@') !== -1) {
+        return v;
+      }
+    }
+  }
+  return '';
+}
+
+--------------------------------------------------------------------------------
+
+7. In the website, set includes/config.php:
+     'form_backend' => 'google',
+     'google_form_embed_url' => 'https://docs.google.com/forms/d/e/FORM_ID/viewform?embedded=true',
+   (Copy the src URL from Form → Send → <> embed HTML.)
+
+8. Quotas: personal Google accounts have daily Apps Script email limits; Workspace limits
+   are higher. For heavy traffic, use the PHP form on the server or an official relay.
+
+================================================================================

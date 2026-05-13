@@ -1,0 +1,418 @@
+/**
+ * SHMS-2026 — Google Apps Script: generate a Google Form for registration + payment confirmation.
+ *
+ * CONTEXT (brochure / website)
+ *  - Conference: SHMS-2026, 15–17 Oct 2026, MNNIT Allahabad.
+ *  - Fee categories: Students/Research Scholars, Faculty, ISHMS Members, Industry, Foreign Delegates.
+ *  - After paying via bank transfer, UPI, IMPS, NEFT, RTGS, etc., participants submit this form with
+ *    transaction details and (manually added) file upload for receipts.
+ *
+ * SETUP
+ *  1. Google Drive → New → More → Google Apps Script. Paste this file. Save the project.
+ *  2. Run createShms2026RegistrationPaymentForm() once (authorize when prompted).
+ *  3. CRITICAL — File upload cannot be created via FormApp API. After the form is created:
+ *     a) Open the form in the Google Forms editor.
+ *     b) Add question → File upload → Title: "Payment receipt / transaction proof (PDF, JPG, or PNG)".
+ *        Set as required if policy requires; note Workspace may require sign-in for uploads.
+ *     c) Optional second File upload: "Additional document (e.g. student ID, ISHMS proof)".
+ *     d) Drag these questions to sit after "Payment channel" / before or after "UTR / reference number"
+ *        as you prefer.
+ *  4. Run installShms2026RegistrationPaymentTrigger() once to move uploaded receipts into a target Drive folder.
+ *     - Set RECEIPT_FOLDER_ID below (or leave empty to auto-create a folder).
+ *  5. Form settings → Responses → Link to Sheets (recommended) for a master spreadsheet.
+ *  6. Settings → Responses → Restrict to … (choose per institute policy).
+ *  7. Publish: Send → link short URL; paste into includes/config.php → registration.payment_form_url
+ *
+ * OPTIONAL: link responses to an existing spreadsheet (uncomment in function):
+ *   form.setDestination(FormApp.DestinationType.SPREADSHEET, spreadsheetId);
+ *
+ * MAINTENANCE
+ *  - Update Early bird / Regular cutoff or fee text in form description when the committee changes rules.
+ *  - Re-run create… only on a fresh form; for edits use Forms UI or new items via script carefully
+ *    (duplicate titles confuse respondents).
+ */
+
+/**
+ * Destination folder for uploaded payment receipts.
+ * - If empty, a folder named "SHMS-2026 Registration Receipts" is created in My Drive of the script owner.
+ * - If set, must be a folder ID from Drive.
+ *
+ * @type {string}
+ */
+var RECEIPT_FOLDER_ID = '';
+
+/**
+ * Stores the created form ID in Script Properties.
+ * @type {string}
+ */
+var PROP_FORM_ID = 'SHMS_REGPAY_FORM_ID';
+
+function createShms2026RegistrationPaymentForm() {
+  var form = FormApp.create('SHMS-2026 — Registration & payment confirmation');
+  form.setDescription(
+    'Submit this form after you have paid the applicable registration fee for SHMS-2026 (15–17 October 2026, MNNIT Allahabad).\n\n' +
+    'Pay using the bank account or UPI details published on the conference website (registration page). ' +
+    'Supported channels include UPI, IMPS, NEFT, RTGS, and other bank transfers as per your bank.\n\n' +
+    'You will be asked for participant details, fee category, payment reference (UTR / transaction ID / cheque number as applicable), ' +
+    'and to upload proof of payment (add the File upload question in the form editor — see script header).\n\n' +
+    'Official queries: shms2026@mnnit.ac.in'
+  );
+  form.setCollectEmail(true);
+  form.setRequireLogin(false);
+  form.setShowLinkToRespondAgain(false);
+  form.setAllowResponseEdits(true);
+  form.setProgressBar(true);
+  form.setShuffleQuestions(false);
+  if (typeof form.setLimitOneResponsePerUser === 'function') {
+    form.setLimitOneResponsePerUser(false);
+  }
+  form.setConfirmationMessage(
+    'Thank you. Your response has been recorded. The secretariat may contact you if clarifications are needed. ' +
+    'Retain your payment proof until your registration is confirmed.'
+  );
+
+  // —— Section: Participant identity ——
+  form.addSectionHeaderItem().setTitle('Participant details');
+
+  form.addTextItem()
+    .setTitle('First name')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Last name')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Email address')
+    .setValidation(FormApp.createTextValidation().requireTextIsEmail().setHelpText('Enter a valid email address.').build())
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Mobile / WhatsApp number (with country code)')
+    .setValidation(
+      FormApp.createTextValidation()
+        .requireTextMatchesPattern('^\\+?[0-9][0-9\\-\\s]{8,19}$')
+        .setHelpText('Use digits, spaces or hyphens. Include country code if outside India.')
+        .build()
+    )
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Country / nationality')
+    .setRequired(true);
+
+  form.addParagraphTextItem()
+    .setTitle('Affiliation / Institution / Organisation (full postal address)')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Designation / role (e.g. PhD scholar, Assistant Professor, Engineer)')
+    .setRequired(true);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Primary participation type')
+    .setChoiceValues(['Author (paper accepted / under review)', 'Attendee only (no paper)', 'Exhibitor / industry delegate', 'Other'])
+    .showOtherOption(true)
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Paper ID / manuscript reference (if applicable; else type NA)')
+    .setRequired(true);
+
+  // —— Section: Registration fee ——
+  form.addSectionHeaderItem().setTitle('Registration category & fee');
+
+  form.addMultipleChoiceItem()
+    .setTitle('Registration category (as per published fee table)')
+    .setChoiceValues([
+      'Students / Research Scholars',
+      'Faculty Members',
+      'ISHMS Members',
+      'Industry Participants',
+      'Foreign Delegates'
+    ])
+    .setRequired(true);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Fee tier')
+    .setHelpText('Use the tier in effect on the date of payment (see website / brochure).')
+    .setChoiceValues([
+      'Early bird (on or before 31 Aug 2026)',
+      'Regular (after 31 Aug 2026)'
+    ])
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('ISHMS membership number (required if you selected ISHMS Members; else NA)')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Amount paid (number only, same currency as fee table — INR or USD)')
+    .setRequired(true);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Currency')
+    .setChoiceValues(['INR (Indian Rupee)', 'USD (US Dollar)'])
+    .setRequired(true);
+
+  form.addMultipleChoiceItem()
+    .setTitle('Do you require a GST-compliant tax invoice (India)?')
+    .setChoiceValues(['Yes', 'No'])
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('GSTIN (if Yes above; else NA)')
+    .setRequired(true);
+
+  form.addParagraphTextItem()
+    .setTitle('Billing name & address for invoice (if required; else NA)')
+    .setRequired(true);
+
+  // —— Section: Payment transaction ——
+  form.addSectionHeaderItem().setTitle('Payment transaction details');
+
+  form.addMultipleChoiceItem()
+    .setTitle('Payment channel used')
+    .setHelpText('Select the method you used. Enter the bank’s reference below.')
+    .setChoiceValues([
+      'UPI (Google Pay / PhonePe / Paytm / BHIM / bank app, etc.)',
+      'IMPS',
+      'NEFT',
+      'RTGS',
+      'Net banking / internal bank transfer to conference account',
+      'Cash deposit at bank branch',
+      'International wire / SWIFT (foreign delegates)',
+      'Other'
+    ])
+    .showOtherOption(true)
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Transaction reference / UTR / UPI transaction ID / bank reference number')
+    .setValidation(FormApp.createTextValidation().requireTextMatchesPattern('^.{6,}$').setHelpText('Enter the exact reference (minimum 6 characters).').build())
+    .setRequired(true);
+
+  form.addDateItem()
+    .setTitle('Date of payment / value date')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Remitter / payer name (as on bank record, if different from participant name; else NA)')
+    .setRequired(true);
+
+  form.addTextItem()
+    .setTitle('Bank name (remitting bank, if known; else NA)')
+    .setRequired(false);
+
+  form.addParagraphTextItem()
+    .setTitle('Additional notes for the secretariat (optional)')
+    .setRequired(false);
+
+  // —— Section: Receipt / proof of payment ——
+  form.addSectionHeaderItem()
+    .setTitle('Receipt / proof of payment')
+    .setHelpText('Receipt upload is mandatory. Configure allowed types (PDF/JPG/PNG) and max files = 1 in the Form editor as per policy.');
+
+  var uploadOk = false;
+  try {
+    var uploadItem = form.addFileUploadItem();
+    uploadItem
+      .setTitle('Upload transaction receipt / payment slip (PDF, JPG, PNG)')
+      .setHelpText('Mandatory. Google Forms file upload generally requires Google sign-in.')
+      .setRequired(true);
+    uploadOk = true;
+  } catch (e2) {
+    uploadOk = false;
+  }
+  if (!uploadOk) {
+    form.addParagraphTextItem()
+      .setTitle('Organizer action required (do not type here)')
+      .setHelpText('Add a File upload question in this section in the Form editor and mark it as REQUIRED. Allowed types: PDF/JPG/PNG. After that, run installShms2026RegistrationPaymentTrigger().')
+      .setRequired(false);
+  }
+
+  // —— Section: Logistics ——
+  form.addSectionHeaderItem().setTitle('Logistics & consent');
+
+  form.addParagraphTextItem()
+    .setTitle('Dietary or accessibility requirements (optional)')
+    .setRequired(false);
+
+  form.addCheckboxItem()
+    .setTitle('Declaration')
+    .setChoiceValues([
+      'I confirm that the information above is correct to the best of my knowledge, and that I have paid or authorised the stated amount for SHMS-2026 registration.'
+    ])
+    .setRequired(true);
+
+  var url = form.getPublishedUrl();
+  var editUrl = form.getEditUrl();
+  Logger.log('Published (respond): ' + url);
+  Logger.log('Edit form (add File upload here): ' + editUrl);
+  PropertiesService.getScriptProperties().setProperty(PROP_FORM_ID, form.getId());
+  return { publishedUrl: url, editUrl: editUrl };
+}
+
+/**
+ * Compatibility wrapper: some older runs refer to this name.
+ * Prefer createShms2026RegistrationPaymentForm().
+ */
+function createSHMS2026RegistrationForm() {
+  return createShms2026RegistrationPaymentForm();
+}
+
+/**
+ * Install an onFormSubmit trigger that moves uploaded receipts into a Drive folder.
+ * Run once (after you have added the File upload question(s) in the Form editor).
+ */
+function installShms2026RegistrationPaymentTrigger() {
+  var props = PropertiesService.getScriptProperties();
+  var formId = props.getProperty(PROP_FORM_ID);
+  if (!formId) {
+    throw new Error('Form ID not found. Run createShms2026RegistrationPaymentForm() first (or set ' + PROP_FORM_ID + ').');
+  }
+  // Avoid duplicate triggers
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    var t = triggers[i];
+    if (t.getHandlerFunction && t.getHandlerFunction() === 'onShms2026RegistrationPaymentSubmit') {
+      return;
+    }
+  }
+  ScriptApp.newTrigger('onShms2026RegistrationPaymentSubmit').forForm(formId).onFormSubmit().create();
+}
+
+/**
+ * onFormSubmit handler (installable trigger).
+ * Moves uploaded files from all FILE_UPLOAD questions into a single destination folder.
+ *
+ * @param {GoogleAppsScript.Events.FormsOnFormSubmit} e
+ */
+function onShms2026RegistrationPaymentSubmit(e) {
+  if (!e || !e.response) {
+    return;
+  }
+  var folder = shmsGetOrCreateReceiptFolder_();
+  var response = e.response;
+  var itemResponses = response.getItemResponses();
+  var fileIds = [];
+  for (var i = 0; i < itemResponses.length; i++) {
+    var ir = itemResponses[i];
+    var item = ir.getItem();
+    if (!item) {
+      continue;
+    }
+    var t = item.getType ? String(item.getType()) : '';
+    if (t !== String(FormApp.ItemType.FILE_UPLOAD)) {
+      continue;
+    }
+    var r = ir.getResponse(); // array of file IDs (multiple upload) or string
+    if (r && typeof r.length !== 'undefined' && typeof r !== 'string') {
+      for (var j = 0; j < r.length; j++) {
+        fileIds.push(String(r[j]));
+      }
+    } else if (r) {
+      fileIds.push(String(r));
+    }
+  }
+
+  if (fileIds.length === 0) {
+    return;
+  }
+
+  // Keep timestamp available for logging/debug if needed (not used in filename convention)
+  var ts = response.getTimestamp ? response.getTimestamp() : new Date();
+  var stamp = Utilities.formatDate(ts, Session.getScriptTimeZone(), 'yyyyMMdd-HHmmss');
+
+  var first = shmsSafeSlug_(shmsPickNamedValue_(e.namedValues, 'First name'));
+  var last = shmsSafeSlug_(shmsPickNamedValue_(e.namedValues, 'Last name'));
+  var tx = shmsSafeSlug_(shmsPickNamedValue_(e.namedValues, 'Transaction reference / UTR / UPI transaction ID / bank reference number'));
+  if (first === '') { first = 'FirstName'; }
+  if (last === '') { last = 'SecondName'; }
+  if (tx === '') { tx = 'TransactionID'; }
+  var base = first + '_' + last + '_' + tx;
+
+  for (var k = 0; k < fileIds.length; k++) {
+    var id = fileIds[k];
+    if (!id) {
+      continue;
+    }
+    try {
+      var f = DriveApp.getFileById(id);
+      var ext = '';
+      var orig = f.getName() || '';
+      var dot = orig.lastIndexOf('.');
+      if (dot > 0 && dot < orig.length - 1) {
+        ext = orig.substring(dot);
+      }
+      // Required naming convention: FirstName_SecondName_TransactionID.ext
+      // If multiple files are uploaded, suffix with _2, _3, etc.
+      var suffix = (k > 0) ? ('_' + (k + 1)) : '';
+      var newName = base + suffix + ext;
+      f.setName(newName);
+      f.moveTo(folder);
+    } catch (err2) {
+      // Continue with other files
+    }
+  }
+}
+
+/**
+ * @return {GoogleAppsScript.Drive.Folder}
+ */
+function shmsGetOrCreateReceiptFolder_() {
+  if (RECEIPT_FOLDER_ID) {
+    return DriveApp.getFolderById(RECEIPT_FOLDER_ID);
+  }
+  var props = PropertiesService.getScriptProperties();
+  var key = 'SHMS_REGPAY_RECEIPT_FOLDER_ID';
+  var existing = props.getProperty(key);
+  if (existing) {
+    return DriveApp.getFolderById(existing);
+  }
+  var folder = DriveApp.createFolder('SHMS-2026 Registration Receipts');
+  props.setProperty(key, folder.getId());
+  return folder;
+}
+
+/**
+ * Pick first value from namedValues map by key.
+ * @param {Object} namedValues
+ * @param {string} key
+ * @return {string}
+ */
+function shmsPickNamedValue_(namedValues, key) {
+  if (!namedValues || !key) {
+    return '';
+  }
+  if (!namedValues.hasOwnProperty(key)) {
+    return '';
+  }
+  var v = namedValues[key];
+  if (!v) {
+    return '';
+  }
+  if (typeof v === 'string') {
+    return v;
+  }
+  if (typeof v.length !== 'undefined' && v.length > 0) {
+    return String(v[0]);
+  }
+  return '';
+}
+
+/**
+ * @param {string} s
+ * @return {string}
+ */
+function shmsSafeSlug_(s) {
+  s = String(s || '').trim();
+  if (!s) {
+    return '';
+  }
+  s = s.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
+  if (s.length > 60) {
+    s = s.substring(0, 60);
+  }
+  return s || '';
+}

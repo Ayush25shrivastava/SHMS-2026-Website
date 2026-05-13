@@ -1,0 +1,73 @@
+/**
+ * SHMS-2026 — Create the contact Google Form + link responses to a new Sheet.
+ *
+ * How to run:
+ * 1. https://script.google.com → New project → paste this file → Save.
+ * 2. Select function createShms2026ContactForm → Run → Authorize.
+ * 3. View → Logs (or Executions) to copy the published URL for google_form_embed_url.
+ * 4. Open the new Sheet in Drive → Extensions → Apps Script → add the e-mail script
+ *    from includes/google-form-email-apps-script.txt and set the onFormSubmit trigger.
+ */
+function createShms2026ContactForm() {
+  var ss = SpreadsheetApp.create('SHMS-2026 Contact — responses');
+  var form = FormApp.create('SHMS-2026 — Contact us');
+  form.setDescription(
+    'Reach the SHMS-2026 secretariat. Your Email answer is used as Reply-To when staff reply.'
+  );
+  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
+
+  form.addTextItem().setTitle('First name').setRequired(true);
+  form.addTextItem().setTitle('Last name').setRequired(true);
+  form.addTextItem()
+    .setTitle('Email')
+    .setHelpText('Used so the secretariat can reply to you directly.')
+    .setRequired(true)
+    .setValidation(FormApp.createTextValidation().requireTextIsEmail().build());
+
+  form
+    .addListItem()
+    .setTitle('Topic')
+    .setRequired(true)
+    .setChoiceValues([
+      'Registration & fees',
+      'Abstract / paper submission',
+      'Venue, travel & accommodation',
+      'Programme & schedule',
+      'Committees & speakers',
+      'Sponsorship & exhibition',
+      'General enquiry',
+      'Other',
+    ]);
+
+  form
+    .addListItem()
+    .setTitle('Your role')
+    .setRequired(false)
+    .setChoiceValues([
+      'Delegate / attendee',
+      'Presenting author',
+      'Student',
+      'Invited speaker / guest',
+      'Sponsor / exhibitor',
+      'Media',
+      'Other',
+    ]);
+
+  form
+    .addListItem()
+    .setTitle('When do you need a reply?')
+    .setRequired(true)
+    .setChoiceValues([
+      'Standard (we reply within a few working days)',
+      'Time-sensitive (before the conference)',
+      'Urgent (conference week / on-site)',
+    ]);
+
+  form.addTextItem().setTitle('Subject').setRequired(true);
+  form.addParagraphTextItem().setTitle('Message').setRequired(true);
+
+  var published = form.getPublishedUrl();
+  Logger.log('Published (embed base): ' + published);
+  Logger.log('Edit form: ' + form.getEditUrl());
+  Logger.log('Responses sheet: ' + ss.getUrl());
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHMS-2026 — Registration (PHP → Google Apps Script)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; color: #0f172a; }
+    h1 { font-size: 1.35rem; }
+    code, pre { background: #f1f5f9; padding: 0.15em 0.35em; border-radius: 4px; font-size: 0.9em; }
+    pre { padding: 1rem; overflow-x: auto; }
+    .note { border-left: 4px solid #0369a1; padding-left: 1rem; margin: 1rem 0; color: #334155; }
+  </style>
+</head>
+<body>
+  <h1>Registration: PHP site → Sheet + Drive (no cURL)</h1>
+  <p>Delegates submit on <code>registration.php</code> (HTML form, no JavaScript). <code>registration-submit.php</code> POSTs JSON to the Web App <code>doPost</code> handler. Outbound HTTPS uses <strong>file_get_contents</strong> with <code>follow_location = 0</code>; on 301–308 the same JSON is POSTed again to <code>Location</code> (no cURL, no <code>stream_socket_client</code>).</p>
+
+  <h2>Reference values (deploy as <code>shms2026@mnnit.ac.in</code>)</h2>
+  <ul>
+    <li><strong>Web app /exec URL</strong> (use this in <code>registration.webapp_url</code> and for browser form + JSON POST — <strong>not</strong> the <code>/dev</code> test URL):<br><code>https://script.google.com/macros/s/AKfycbxKokuYdzcc5-XHhOnVBVu2kBjuX10O_iXiBIkaGzsBkesZ5bNpyMktjK3fJNRsavYK/exec</code></li>
+    <li><strong>Deployment ID</strong> (segment after <code>/macros/s/</code>): <code>AKfycbxKokuYdzcc5-XHhOnVBVu2kBjuX10O_iXiBIkaGzsBkesZ5bNpyMktjK3fJNRsavYK</code></li>
+    <li><strong>Do not use for public registration:</strong> URLs ending in <code>/dev</code> (e.g. a test link that shows Google sign-in for visitors) — copy the <code>/exec</code> URL from <strong>Deploy → Manage deployments → Web app</strong>.</li>
+    <li><strong>Google Workspace (@mnnit.ac.in):</strong> Apps Script may show a URL like <code>script.google.com<strong>/a/mnnit.ac.in/</strong>macros/s/…/exec</code>. Anonymous delegates often get HTML sign-in instead of JSON on POST. Use the <strong>public</strong> form <code>https://script.google.com/macros/s/…/exec</code> (same deployment ID) in <code>webapp_url</code> and <code>CONFIG.WEBAPP_EXEC_URL</code>; <code>Code.gs</code> prefers that when <code>getUrl()</code> contains <code>/a/</code>.</li>
+    <li><strong>Apps Script library URL</strong> (for importing this project into <em>other</em> Apps Script projects only — <strong>do not</strong> paste into <code>webhook_url</code> or <code>webapp_url</code>; it is not the public web app and will not return JSON for delegates):<br><code>https://script.google.com/macros/library/d/1yzqX_FNVKRYQHr70LCOJjKdZ0uXUbCjtmXuBAsFTIpvw_kW5_5m1GWpp/6</code></li>
+    <li><strong>Spreadsheet ID:</strong> <code>1sckcFJFuJhOE1APuk8mW7z8xAFKuSHcP2WvJLv6bbhs</code> (sheet name <code>Registrations</code> in Apps Script)</li>
+    <li><strong>Drive folder ID (receipts):</strong> <code>1_5msIMxqS3YMkuYXr1w5CvKyu500bgrp</code></li>
+  </ul>
+
+  <h2>Site configuration</h2>
+  <p>In <code>includes/config.php</code>, under <code>registration</code>:</p>
+  <ul>
+    <li><strong>Recommended (institute sites):</strong> <code>webapp_url</code> = empty; <code>webhook_url</code> = the <code>/exec</code> URL above. <code>registration.php</code> then shows only the embedded PHP form; the server POSTs JSON to Google (no browser <code>fetch</code> to <code>script.google.com</code>, so HTML sign-in pages in the browser are avoided).</li>
+    <li><strong>Optional:</strong> <code>webapp_url</code> = same <code>/exec</code> URL to show “Open registration form” (Google-hosted UI). If that page returns HTML instead of JSON on submit, use the PHP-only setup or add <code>php_form_alongside_webapp</code> = <code>true</code>.</li>
+    <li>Optional <code>submit_secret</code> = same string as <code>CONFIG.SUBMIT_SECRET</code> in Apps Script (if you enable it).</li>
+    <li><code>use_curl</code> = <code>true</code> to send the webhook POST with PHP cURL first (enable <code>extension=php_curl</code> / <code>php_curl.dll</code>); otherwise the stream wrapper is tried first.</li>
+    <li>Production: <code>insecure_ssl</code> = <code>false</code>; set <code>ca_bundle</code> or <code>contact.sheet_webhook_cainfo</code> or <code>tools/cacert.pem</code>.</li>
+    <li>Local Windows: <code>insecure_ssl</code> = <code>true</code> only for testing.</li>
+  </ul>
+
+  <h2>Apps Script</h2>
+  <p>Paste <code>includes/registration-webapp/Code.gs.txt</code> into a single <strong>Code.gs</strong> file (V8 runtime). You do <strong>not</strong> need a separate <code>Registration.html</code> in Google: the form is embedded in that file unless you set <code>CONFIG.LOAD_REGISTRATION_FROM_PROJECT_FILE</code> to <code>true</code> and add an HTML file named exactly <code>Registration</code>. <code>doPost</code> reads <code>postData.contents</code> and <code>JSON.parse</code>s it (same for JSON posted as <code>Content-Type: text/plain</code> from the embedded form, to avoid a CORS preflight). Opening the <code>/exec</code> URL in a browser (GET) may still show a setup page until <code>doGet</code> is satisfied; the PHP path does not depend on that for submissions.</p>
+
+  <h2>PHP requirements</h2>
+  <ul>
+    <li><code>allow_url_fopen</code> enabled.</li>
+    <li><strong>HTTPS outbound:</strong> either (1) <strong>OpenSSL</strong> + <code>allow_url_fopen</code> for <code>file_get_contents('https://…')</code>, or (2) <strong>PHP cURL</strong> (<code>curl_init</code>) if OpenSSL is not loaded — the registration handler tries the stream first, then cURL. Use <code>tools/cacert.pem</code> or <code>registration.ca_bundle</code> / <code>curl.cainfo</code> if TLS verification fails.</li>
+    <li>Outbound HTTPS to <code>script.google.com</code> and <code>script.googleusercontent.com</code>.</li>
+  </ul>
+
+  <div class="note">
+    <strong>“The server did not return JSON”</strong> on the Google-hosted form means the POST got HTML (e.g. sign-in) or an error page, not <code>{"ok":…}</code>. Fix: Web app deployment → <strong>Execute as: Me</strong>, <strong>Who has access: Anyone</strong> (or anyone with the link who can sign in). Open the form only from the live <code>/exec</code> URL — not the library URL or Run/Preview from the editor. In Apps Script, set <code>CONFIG.WEBAPP_EXEC_URL</code> in <code>Code.gs</code> to the same <code>/exec</code> URL so the form still POSTs correctly if <code>getUrl()</code> is empty.
+  </div>
+
+  <div class="note">
+    <strong>Contact form email</strong> (SMTP / <code>mail()</code>) is unrelated to this path; registration only talks to Apps Script over HTTPS.
+  </div>
+</body>
+</html>

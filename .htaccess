@@ -1,0 +1,9 @@
+# SHMS-2026 — Apache / MNNIT hosting
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Optional: redirect old .html bookmarks to .php (uncomment if needed)
+  # RewriteRule ^(.*)\.html$ $1.php [L,R=301]
+</IfModule>
+
+# Default index
+DirectoryIndex index.php index.html

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #0369a1;
+      --accent-soft: #e0f2fe;
+      --border: #cbd5e1;
+      --danger: #b91c1c;
+      --ok: #047857;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      padding: 1rem 1rem 2rem;
+    }
+    .wrap { max-width: 36rem; margin: 0 auto; }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .lede { margin: 0 0 1rem; color: var(--muted); font-size: 0.95rem; }
+    form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.15rem 1.25rem 1.35rem;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 0.75rem 0 0.25rem;
+      color: var(--text);
+    }
+    label:first-of-type { margin-top: 0; }
+    .hint { font-size: 0.78rem; font-weight: 400; color: var(--muted); }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    textarea { min-height: 4rem; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .file-row { margin-top: 0.75rem; }
+    input[type="file"] {
+      width: 100%;
+      font-size: 0.88rem;
+    }
+    .err {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin: 0.35rem 0 0;
+    }
+    .actions { margin-top: 1.25rem; }
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9, #0369a1);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    button[type="submit"]:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+    .status {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+    }
+    .status--busy {
+      display: block;
+      background: var(--accent-soft);
+      color: var(--text);
+      border: 1px solid rgba(3, 105, 161, 0.2);
+    }
+    .status--ok {
+      display: block;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+    .status--fail {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid rgba(3, 105, 161, 0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: shms-spin 0.7s linear infinite;
+      vertical-align: -0.15em;
+      margin-right: 0.35rem;
+    }
+    @keyframes shms-spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>SHMS-2026 — Registration</h1>
+    <p class="lede">Complete after payment. Upload your transaction receipt (PDF, JPG, or PNG, max 5&nbsp;MB).</p>
+
+    <form id="shms-reg-form" novalidate>
+      <? if (submitSecret) { ?>
+      <input type="hidden" name="submitSecret" id="submitSecret" value="<?= submitSecret ?>">
+      <? } ?>
+
+      <label for="firstName">First name <span class="hint">(required)</span></label>
+      <input type="text" id="firstName" name="firstName" required maxlength="120" autocomplete="given-name">
+
+      <label for="lastName">Last name <span class="hint">(required)</span></label>
+      <input type="text" id="lastName" name="lastName" required maxlength="120" autocomplete="family-name">
+
+      <label for="email">Email <span class="hint">(required)</span></label>
+      <input type="email" id="email" name="email" required maxlength="254" autocomplete="email">
+
+      <label for="phone">Phone <span class="hint">(required, with country code)</span></label>
+      <input type="tel" id="phone" name="phone" required maxlength="40" autocomplete="tel">
+
+      <label for="affiliation">Affiliation / institution</label>
+      <input type="text" id="affiliation" name="affiliation" maxlength="300">
+
+      <label for="category">Registration category <span class="hint">(required)</span></label>
+      <select id="category" name="category" required>
+        <option value="">Select…</option>
+        <option>Students / Research Scholars</option>
+        <option>Faculty Members</option>
+        <option>ISHMS Members</option>
+        <option>Industry Participants</option>
+        <option>Foreign Delegates</option>
+      </select>
+
+      <label for="transactionId">Transaction ID / UTR / reference <span class="hint">(required)</span></label>
+      <input type="text" id="transactionId" name="transactionId" required maxlength="120" autocomplete="off">
+
+      <label for="amount">Amount paid <span class="hint">(numeric)</span></label>
+      <input type="text" id="amount" name="amount" inputmode="decimal" maxlength="20" placeholder="e.g. 8850">
+
+      <label for="paymentChannel">Payment channel <span class="hint">(required)</span></label>
+      <select id="paymentChannel" name="paymentChannel" required>
+        <option value="">Select…</option>
+        <option>UPI</option>
+        <option>IMPS</option>
+        <option>NEFT</option>
+        <option>RTGS</option>
+        <option>Net banking / bank transfer</option>
+        <option>International wire / SWIFT</option>
+        <option>Other</option>
+      </select>
+
+      <label for="notes">Notes for secretariat (optional)</label>
+      <textarea id="notes" name="notes" maxlength="2000"></textarea>
+
+      <div class="file-row">
+        <label for="receipt">Transaction receipt <span class="hint">(required — PDF, PNG, JPG, JPEG — max 5&nbsp;MB)</span></label>
+        <input type="file" id="receipt" name="receipt" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" required>
+        <p id="file-err" class="err" style="display:none;"></p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="submit-btn">Submit registration</button>
+      </div>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+    (function () {
+      var POST_URL = <?= JSON.stringify(postUrl || '') ?>;
+      var MAX_BYTES = 5 * 1024 * 1024;
+      var ALLOW_EXT = { pdf: 1, png: 1, jpg: 1, jpeg: 1 };
+      var ALLOW_MIME = { 'application/pdf': 1, 'image/png': 1, 'image/jpeg': 1, 'image/jpg': 1 };
+
+      var form = document.getElementById('shms-reg-form');
+      var btn = document.getElementById('submit-btn');
+      var statusEl = document.getElementById('status');
+      var fileErr = document.getElementById('file-err');
+      var receipt = document.getElementById('receipt');
+
+      function tryParseJson(text) {
+        if (text == null || typeof text !== 'string') {
+          return null;
+        }
+        var t = text.replace(/^\uFEFF/, '').trim();
+        if (!t) {
+          return null;
+        }
+        try {
+          return JSON.parse(t);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function showStatus(kind, msg) {
+        statusEl.className = 'status';
+        if (kind === 'busy') {
+          statusEl.classList.add('status--busy');
+          statusEl.innerHTML = '<span class="spinner" aria-hidden="true"></span>' + msg;
+        } else if (kind === 'ok') {
+          statusEl.classList.add('status--ok');
+          statusEl.textContent = msg;
+        } else if (kind === 'fail') {
+          statusEl.classList.add('status--fail');
+          statusEl.textContent = msg;
+        } else {
+          statusEl.style.display = 'none';
+          statusEl.textContent = '';
+          return;
+        }
+        statusEl.style.display = 'block';
+      }
+
+      function fileExt(name) {
+        var i = name.lastIndexOf('.');
+        return i >= 0 ? name.substring(i + 1).toLowerCase() : '';
+      }
+
+      function validateFile(file) {
+        fileErr.style.display = 'none';
+        fileErr.textContent = '';
+        if (!file) {
+          fileErr.textContent = 'Please choose a receipt file.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        if (file.size > MAX_BYTES) {
+          fileErr.textContent = 'File must be 5 MB or smaller.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        var ext = fileExt(file.name);
+        if (!ALLOW_EXT[ext]) {
+          fileErr.textContent = 'Only PDF, PNG, JPG, or JPEG files are allowed.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        var mt = (file.type || '').toLowerCase();
+        if (mt && !ALLOW_MIME[mt]) {
+          fileErr.textContent = 'Invalid file type. Use PDF, PNG, JPG, or JPEG.';
+          fileErr.style.display = 'block';
+          return false;
+        }
+        return true;
+      }
+
+      receipt.addEventListener('change', function () {
+        validateFile(receipt.files[0]);
+      });
+
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!POST_URL) {
+          showStatus('fail', 'Web app URL is not available. Redeploy the script as a Web app and open this page from the deployment URL.');
+          return;
+        }
+
+        var file = receipt.files[0];
+        if (!validateFile(file)) {
+          return;
+        }
+
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        btn.disabled = true;
+        showStatus('busy', 'Uploading…');
+
+        var reader = new FileReader();
+        reader.onerror = function () {
+          btn.disabled = false;
+          showStatus('fail', 'Could not read the file. Please try again.');
+        };
+        reader.onload = function () {
+          var result = reader.result;
+          if (typeof result !== 'string' || result.indexOf(',') < 0) {
+            btn.disabled = false;
+            showStatus('fail', 'Could not encode the file.');
+            return;
+          }
+          var base64 = result.split(',')[1];
+          var mimeType = file.type || 'application/octet-stream';
+
+          var payload = {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            affiliation: document.getElementById('affiliation').value.trim(),
+            category: document.getElementById('category').value.trim(),
+            transactionId: document.getElementById('transactionId').value.trim(),
+            amount: document.getElementById('amount').value.trim(),
+            paymentChannel: document.getElementById('paymentChannel').value.trim(),
+            notes: document.getElementById('notes').value.trim(),
+            fileName: file.name,
+            mimeType: mimeType,
+            fileBase64: base64
+          };
+          var sec = document.getElementById('submitSecret');
+          if (sec) {
+            payload.submitSecret = sec.value.trim();
+          }
+
+          /* text/plain + JSON body avoids CORS preflight (application/json triggers OPTIONS; Apps Script often does not answer it). */
+          fetch(POST_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload),
+            mode: 'cors',
+            credentials: 'omit',
+            redirect: 'follow'
+          })
+            .then(function (r) {
+              return r.text().then(function (text) {
+                return { okHttp: r.ok, status: r.status, text: text };
+              });
+            })
+            .then(function (res) {
+              var text = res.text;
+              var j = tryParseJson(text);
+              btn.disabled = false;
+              if (!res.okHttp && (res.status === 401 || res.status === 403)) {
+                showStatus('fail', 'Access denied by the registration service. Redeploy the Web app as “Execute as: Me” and “Who has access: Anyone”, then use the new /exec URL.');
+                return;
+              }
+              if (!j) {
+                var raw = (text || '').trim();
+                var msg =
+                  'The server did not return JSON — so the browser got HTML or plain text instead of {"ok":…}. ';
+                if (!raw) {
+                  msg +=
+                    'The response was empty. Redeploy the Web app, confirm “Who has access: Anyone” (or anyone with the link), and open the form only from the live /exec URL — not the library link or the editor Preview.';
+                } else if (/^<\s*!DOCTYPE/i.test(raw) || /^<\s*html/i.test(raw)) {
+                  msg +=
+                    'The reply looks like a full HTML page (often a Google sign-in or “access denied” page). Fix: Deploy → Web app → set “Who has access” to Anyone or Anyone with Google account, Execute as: Me, and use a URL ending in /exec (not /dev). This form is posting to: ' +
+                    (POST_URL || '(unknown — redeploy the Web app)') +
+                    '. If that URL is an old deployment, paste the latest Code.gs from the site repo and deploy a new version.';
+                } else if (/sign in to continue|accounts\.google\.com/i.test(raw)) {
+                  msg +=
+                    'The reply mentions signing in. Anonymous users must be allowed to invoke the Web app, or they will never get JSON back.';
+                } else {
+                  msg += 'Start of response: “' + raw.substring(0, 100).replace(/\s+/g, ' ') + '…” ';
+                }
+                msg += ' HTTP status: ' + res.status + '. ';
+                msg +=
+                  'If the conference registration page offers an on-site form (“Submit on this website”), use that — the server posts to Google for you. ';
+                msg += 'Email shms2026@mnnit.ac.in with your receipt if it keeps failing.';
+                showStatus('fail', msg);
+                return;
+              }
+              if (j.ok === true) {
+                form.reset();
+                showStatus('ok', 'Registration complete.');
+                return;
+              }
+              var code =
+                j.error !== undefined && j.error !== null && String(j.error).trim() !== ''
+                  ? String(j.error).trim()
+                  : 'no_error_field';
+              var errMap = {
+                unauthorized:
+                  'Submission was rejected (secret mismatch). If this form was opened from the institute site, ask the web admin to align submitSecret with the Apps Script SUBMIT_SECRET.',
+                missing_fields: 'Please fill in all required fields.',
+                missing_file: 'Please attach your transaction receipt.',
+                invalid_file_type: 'Receipt must be a PDF, PNG, JPG, or JPEG file.',
+                invalid_base64: 'Could not read the uploaded file. Try another file or format.',
+                empty_file: 'The uploaded file appears empty.',
+                file_too_large: 'Receipt must be 5 MB or smaller.',
+                bad_request: 'Invalid request.',
+                empty_body: 'Invalid request.',
+                invalid_json: 'The server could not read the request (invalid JSON). Try again or email shms2026@mnnit.ac.in with your receipt.',
+                internal_error: 'Registration handler returned an invalid response. Check Apps Script → Executions.',
+                unknown_error: 'Registration failed for an unknown reason. Check Apps Script → Executions (failed run).',
+                server_error: 'Registration script crashed. Check Apps Script → Executions for the stack trace.',
+                no_error_field:
+                  'The server returned failure without an error code (HTTP ' +
+                  res.status +
+                  '). Often the Web App URL is wrong, or a proxy returned HTML/JSON that is not from Apps Script. Open Apps Script → Executions.',
+                config_missing:
+                  'The registration server is not configured (spreadsheet or Drive folder ID missing in Apps Script CONFIG). Contact the web admin.',
+                save_failed:
+                  'Could not save to Drive or the Sheet (check Apps Script Executions log: folder ID, spreadsheet ID, and your account permissions). Email shms2026@mnnit.ac.in with your receipt.'
+              };
+              var friendly = errMap[code];
+              if (
+                !friendly &&
+                (code.indexOf('Exception:') === 0 ||
+                  /^([A-Za-z]+Error|SyntaxError|TypeError|ReferenceError)\b/.test(code))
+              ) {
+                friendly =
+                  'Server error while saving. Check Apps Script → Executions for details, or email shms2026@mnnit.ac.in with your receipt.';
+              }
+              if (!friendly && !res.okHttp) {
+                friendly =
+                  'HTTP ' +
+                  res.status +
+                  ' from registration service. Redeploy the Web app (Execute as: Me, access: Anyone), confirm the /exec URL, or email shms2026@mnnit.ac.in with your receipt.';
+              }
+              var err = friendly || code || 'Submission failed. Please try again or email shms2026@mnnit.ac.in.';
+              showStatus('fail', err);
+            })
+            .catch(function () {
+              btn.disabled = false;
+              showStatus(
+                'fail',
+                'Could not complete the request (network, browser extension, or firewall). Try another browser or network, or open the registration form from the published /exec link. Email shms2026@mnnit.ac.in with your receipt if it keeps failing.'
+              );
+            });
+        };
+        reader.readAsDataURL(file);
+      });
+    })();
+  </script>
+</body>
+</html>

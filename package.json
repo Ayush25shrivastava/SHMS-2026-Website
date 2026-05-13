@@ -1,0 +1,19 @@
+{
+  "name": "shms-2026",
+  "version": "1.0.0",
+  "description": "SHMS-2026 conference site — PHP + MySQL for MNNIT hosting; optional local static preview",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev:php",
+    "dev:static": "lite-server --baseDir .",
+    "dev:php": "node tools/php-dev-server.js"
+  },
+  "devDependencies": {
+    "lite-server": "^2.5.4"
+  },
+  "dependencies": {
+    "php": "^1.1.0",
+    "php-compiler-node": "^1.0.0",
+    "php-server": "^3.0.0"
+  }
+}
