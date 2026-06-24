@@ -206,40 +206,41 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
     </p>
 
     <h3 class="sponsorship-subtitle">Partnership categories</h3>
-    <p class="sponsorship-note">Indicative benefits below; final tariffs, inclusions, and branding slots are confirmed in the official sponsorship prospectus.</p>
+    <!-- <p class="sponsorship-note">Indicative benefits below; final tariffs, inclusions, and branding slots are confirmed in the official sponsorship prospectus.</p> -->
     <div class="sponsorship-tiers" role="list">
-      <article class="sponsorship-tier" role="listitem">
+      <article class="sponsorship-tier sponsorship-tier--platinum" role="listitem">
         <div class="sponsorship-tier__badge sponsorship-tier__badge--platinum" aria-hidden="true">P</div>
         <h4 class="sponsorship-tier__name">Platinum</h4>
         <p class="sponsorship-tier__tagline">Maximum visibility</p>
         <ul class="sponsorship-tier__list">
-          <li>Prominent logo on conference website and key signage</li>
-          <li>Acknowledgement during inaugural / valedictory sessions</li>
-          <li>Complimentary full registrations for up to <strong>four</strong> delegates</li>
-          <li>Priority exhibition / display space (subject to venue layout)</li>
+          <li>₹1,50,000 + GST</li>
+          <li>Platinum Sponsorship offers the highest level of visibility and recognition throughout the conference</li>
+          <li>4 Complimentary Conference Registrations</li>
+          <li>Prime logo placement on website, banners, and all conference materials</li>
+          <!-- <li>Special acknowledgement during the conference opening and closing ceremonies</li> -->
         </ul>
         <p class="sponsorship-tier__price">Commercial terms on request</p>
       </article>
-      <article class="sponsorship-tier sponsorship-tier--featured" role="listitem">
+      <article class="sponsorship-tier sponsorship-tier--featured sponsorship-tier--gold" role="listitem">
         <div class="sponsorship-tier__badge sponsorship-tier__badge--gold" aria-hidden="true">G</div>
         <h4 class="sponsorship-tier__name">Gold</h4>
         <p class="sponsorship-tier__tagline">Strong conference presence</p>
         <ul class="sponsorship-tier__list">
-          <li>Logo on website, programme booklet, and session materials</li>
-          <li>Verbal acknowledgement in plenary programme</li>
-          <li>Complimentary full registrations for up to <strong>three</strong> delegates</li>
-          <li>Exhibition table or branded stand (as per floor plan)</li>
+          <li>₹1,00,000 + GST</li>
+          <li>Gold Sponsorship offers substantial visibility and engagement opportunities</li>
+          <li>3 Complimentary Conference Registrations</li>
+          <li>Display of company logo on conference banners, standees, and the official conference website</li>
         </ul>
         <p class="sponsorship-tier__price">Commercial terms on request</p>
       </article>
-      <article class="sponsorship-tier" role="listitem">
+      <article class="sponsorship-tier sponsorship-tier--silver" role="listitem">
         <div class="sponsorship-tier__badge sponsorship-tier__badge--silver" aria-hidden="true">S</div>
         <h4 class="sponsorship-tier__name">Silver</h4>
         <p class="sponsorship-tier__tagline">Targeted exposure</p>
         <ul class="sponsorship-tier__list">
-          <li>Logo in programme and on the conference website</li>
-          <li>Complimentary full registrations for up to <strong>two</strong> delegates</li>
-          <li>Listing in the sponsor roll‑call and proceedings USB</li>
+          <li>₹50,000 + GST</li>
+          <li>Silver Sponsorship provides an excellent platform for organizations to showcase their brand and connect with the academic and professional community.</li>
+          <li>2 Complimentary Conference Registrations</li>
         </ul>
         <p class="sponsorship-tier__price">Commercial terms on request</p>
       </article>
@@ -251,17 +252,18 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
       <article class="sponsorship-addon" role="listitem">
         <h4 class="sponsorship-addon__title">Inside full page</h4>
         <p class="sponsorship-addon__text">Single full‑colour page in the conference souvenir / abstract volume.</p>
-        <p class="sponsorship-addon__price">Rate on application</p>
+        <!-- <p class="sponsorship-addon__price">Rate on application</p> -->
       </article>
       <article class="sponsorship-addon" role="listitem">
         <h4 class="sponsorship-addon__title">Inside half page</h4>
         <p class="sponsorship-addon__text">Compact advertisement suitable for logos, QR codes, and short messaging.</p>
-        <p class="sponsorship-addon__price">Rate on application</p>
+        <!-- <p class="sponsorship-addon__price">Rate on application</p> -->
       </article>
     </div>
 
     <p class="sponsorship-outro">
-      For a detailed prospectus, bank details, and GST‑compliant invoicing, write to the conference secretariat at
+      The account details for sponsorship are same as registration account details.
+      For more information write to the conference secretariat at
       <a href="mailto:shms2026@mnnit.ac.in?subject=SHMS-2026%20sponsorship%20enquiry">shms2026@mnnit.ac.in</a>
       with subject line <strong>SHMS‑2026 sponsorship enquiry</strong>.
     </p>
