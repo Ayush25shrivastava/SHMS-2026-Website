@@ -72,7 +72,7 @@ $__shmsFooterThemeShort = $__shmsFooterThemeDark ? 'Light mode' : 'Dark mode';
               <span class="site-footer-contact-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h4l2 4-2 1.5a11 11 0 006 6L16 13l4 2v4a2 2 0 01-2 2A16 16 0 015 6a2 2 0 012-2z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
               </span>
-              <span><a href="tel:+915322271301">+91‑532‑227‑1301</a></span>
+              <span><a href="tel:+919783750870">+91-9783750870</a></span>
             </li>
             <li>
               <span class="site-footer-contact-icon" aria-hidden="true">

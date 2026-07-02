@@ -4515,7 +4515,7 @@ html.theme-dark .registration-webapp-embed__frame {
 
 /* Tier-specific light theme styling */
 .sponsorship-tier--platinum {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #c0c4c7 100%);
   border-color: rgba(71, 85, 105, 0.3);
   box-shadow: 0 4px 18px rgba(100, 116, 139, 0.08);
 }

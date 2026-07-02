@@ -229,7 +229,7 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
           <li>₹1,00,000 + GST</li>
           <li>Gold Sponsorship offers substantial visibility and engagement opportunities</li>
           <li>3 Complimentary Conference Registrations</li>
-          <li>Display of company logo on conference banners, standees, and the official conference website</li>
+          <li>Display of company logo on conference banners, and the official conference website</li>
         </ul>
         <p class="sponsorship-tier__price">Commercial terms on request</p>
       </article>
@@ -241,25 +241,26 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
           <li>₹50,000 + GST</li>
           <li>Silver Sponsorship provides an excellent platform for organizations to showcase their brand and connect with the academic and professional community.</li>
           <li>2 Complimentary Conference Registrations</li>
+          <li>Display of company logo on the official conference website</li>
         </ul>
         <p class="sponsorship-tier__price">Commercial terms on request</p>
       </article>
     </div>
 
-    <h3 class="sponsorship-subtitle">Proceedings &amp; souvenir options</h3>
+    <!-- <h3 class="sponsorship-subtitle">Proceedings &amp; souvenir options</h3>
     <p class="sponsorship-note">Reach every delegate through the printed / digital conference kit. Layouts and deadlines are coordinated with the publication chair.</p>
     <div class="sponsorship-addons" role="list">
       <article class="sponsorship-addon" role="listitem">
         <h4 class="sponsorship-addon__title">Inside full page</h4>
         <p class="sponsorship-addon__text">Single full‑colour page in the conference souvenir / abstract volume.</p>
-        <!-- <p class="sponsorship-addon__price">Rate on application</p> -->
+        <p class="sponsorship-addon__price">Rate on application</p>
       </article>
       <article class="sponsorship-addon" role="listitem">
         <h4 class="sponsorship-addon__title">Inside half page</h4>
         <p class="sponsorship-addon__text">Compact advertisement suitable for logos, QR codes, and short messaging.</p>
-        <!-- <p class="sponsorship-addon__price">Rate on application</p> -->
+        <p class="sponsorship-addon__price">Rate on application</p>
       </article>
-    </div>
+    </div> -->
 
     <p class="sponsorship-outro">
       The account details for sponsorship are same as registration account details.

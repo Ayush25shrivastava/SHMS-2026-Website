@@ -62,7 +62,7 @@ $shmsContactFeedback = shms_contact_uses_google_form() ? null : shms_contact_han
         <p>Email: <a href="mailto:shms2026@mnnit.ac.in" style="color:#004a8f;">shms2026@mnnit.ac.in</a><br>
           Website: <a href="https://mnnit.ac.in/shms2026" target="_blank"
             style="color:#004a8f;">https://mnnit.ac.in/shms2026</a><br>
-          Phone: +91‑532‑227‑1301</p>
+          Phone: +91-9783750870</p>
       </div>
       <p>We look forward to welcoming you to SHMS‑2026 in Prayagraj! If you have any queries or require assistance
         regarding your participation, travel arrangements or accommodations, please do not hesitate to contact us.</p>
