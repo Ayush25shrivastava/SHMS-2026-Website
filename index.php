@@ -230,12 +230,12 @@ $shmsNavPage = 'index';
             <td><strike style="color: red; font-weight: 400;">June 30,&nbsp;2026</strike><div>Extended Deadline : July 20, 2026</div> </td>
           </tr>
           <tr>
-            <td>Notification of Abstract Acceptance</td>
-            <td>August 5, 2026</td>
+            <td>Full Paper Submission Deadline</td>
+            <td>July 31,&nbsp;2026</td>
           </tr>
           <tr>
-            <td>Full Paper Submission Deadline</td>
-            <td>August 31,&nbsp;2026</td>
+            <td>Notification of Abstract Acceptance</td>
+            <td>August 5, 2026</td>
           </tr>
           <tr>
             <td>Notification of Paper Acceptance</td>
