@@ -68,14 +68,17 @@ $shmsNavPage = 'call';
       <h2 id="submission">Submission Requirements</h2>
       <div class="submission-grid">
         <div class="notice-box notice-box--academic">
-          <p class="notice-box-title">Academic Submission</p>
-          <p class="notice-box-text">
-            <strong>Step 1: </strong>Submit 300-500 words academic abstract including title, authors,
-            affiliations and keywords.
+          <p class="notice-box-title" style="text-align: center;">Academic Submission</p>
+          <!-- <p class="notice-box-text">
+            <strong>Step 1: </strong>Submit a 300–500 word academic abstract, including the title, list of authors, institutional affiliations, and relevant keywords.
             <br />
-            <strong>Step 2: </strong>After abstract review and acceptance, submit full paper.
-            <br>
-          </p>
+            <strong>Step 2: </strong>Upon successful peer-review and official acceptance of the abstract, authors will be invited to present their research at the conference.
+            <br />
+            <strong>Step 3: </strong>Following the conference, authors of selected abstracts will be invited to submit full-length papers. Peer-reviewed and accepted full papers will be published in the journal or official conference proceedings.
+            <br />
+          </p> -->
+          
+          <img src="assets/images/academic abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;">
           <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
             <button
               onclick="window.open('https://docs.google.com/document/d/14r82RQS1PiAMdbCEMuyr3mWpDo-WVvGQ/edit?usp=sharing&ouid=109414172089836850540&rtpof=true&sd=true', '_blank')"
@@ -88,14 +91,14 @@ $shmsNavPage = 'call';
           </div>
         </div>
         <div class="notice-box notice-box--industry">
-          <p class="notice-box-title">Industry Submission</p>
-          <p class="notice-box-text">
+          <p class="notice-box-title" style="text-align: center;">Industry Submission</p>
+          <!-- <p class="notice-box-text">
             <strong>Step 1: </strong>Submit the extended industrial abstract using the Industrial Track Submission
             Template.
             <br />
-            <strong>Step 2: </strong>The acceptance will be notified to the authors via email.
-            <br>
-          </p>
+            <strong>Step 2: </strong>Upon successful peer-review and official acceptance of the abstract, authors will be invited to present their research at the conference.
+          </p> -->
+          <img src="assets/images/industrial abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;">
           <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
             <button
               onclick="window.open('https://docs.google.com/document/d/1h93zYfoAe0RhsXXgU4tmKcYAGYUPvZ3h/edit?usp=sharing&ouid=109414172089836850540&rtpof=true&sd=true', '_blank')"
