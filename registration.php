@@ -85,13 +85,13 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
       </table>
       <p>The above fees are inclusive of all applicable taxes.</p>
 
-      <h2 id="cancellation-policy">Registration Fees Cancellation Policy</h2>
+      <!-- <h2 id="cancellation-policy">Registration Fees Cancellation Policy</h2>
       <p>Registration fee cancellation requests must be submitted by the registered author(s) only through email at <a
           href="mailto:[EMAIL_ADDRESS]">shms2026@mnnit.ac.in</a> on or before <strong>October 1, 2026 (5:00
           P.M.)</strong>. The registration fee will be refunded after deducting the applicable tax, along with 20%
         cancellation charges. The refund will be initiated after the conference. No refund request will be entertained
         after
-        October 1, 2026 (5:00 P.M.).</p>
+        October 1, 2026 (5:00 P.M.).</p> -->
 
       <h2 id="payment">Payment &amp; confirmation</h2>
       <p>Pay the fee applicable to your category and date of payment using the conference account below. You may use
