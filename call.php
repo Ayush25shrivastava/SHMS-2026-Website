@@ -40,20 +40,20 @@ $shmsNavPage = 'call';
         <tbody>
           <tr>
             <td>Abstract Submission Deadline</td>
-            <td><strike style="color: red; font-weight: 400;">June 30,&nbsp;2026</strike><div>Extended Deadline : July 20, 2026</div> </td>
+            <td>August 20, 2026</td>
           </tr>
-          <tr>
+          <!-- <tr>
             <td>Full Paper Submission Deadline</td>
             <td>July 31,&nbsp;2026</td>
-          </tr>
+          </tr> -->
           <tr>
             <td>Notification of Abstract Acceptance</td>
-            <td>August 5, 2026</td>
+            <td>August 31, 2026</td>
           </tr>
-          <tr>
+          <!-- <tr>
             <td>Notification of Paper Acceptance</td>
             <td>August 31,&nbsp;2026</td>
-          </tr>
+          </tr> -->
           <tr>
             <td>Early Bird Registration Deadline</td>
             <td>September 15,&nbsp;2026</td>
