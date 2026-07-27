@@ -227,15 +227,15 @@ $shmsNavPage = 'index';
         <tbody>
           <tr>
             <td>Abstract Submission Deadline</td>
-            <td>August 20, 2026</td>
+            <td>August 10, 2026</td>
           </tr>
-          <!-- <tr>
-            <td>Full Paper Submission Deadline</td>
-            <td>July 31,&nbsp;2026</td>
-          </tr> -->
           <tr>
             <td>Notification of Abstract Acceptance</td>
-            <td>August 31, 2026</td>
+            <td>August 15, 2026</td>
+          </tr>
+          <tr>
+            <td>Full Paper Submission Deadline</td>
+            <td>September 15,&nbsp;2026<div><strong>(*If Authors wish to forward the paper for consideration in Proceedings/Journal Article)</strong></div></td>
           </tr>
           <!-- <tr>
             <td>Notification of Paper Acceptance</td>
@@ -243,7 +243,7 @@ $shmsNavPage = 'index';
           </tr> -->
           <tr>
             <td>Early Bird Registration Deadline</td>
-            <td>September 15,&nbsp;2026</td>
+            <td>September 25,&nbsp;2026</td>
           </tr>
           <tr>
             <td>Conference Dates</td>
