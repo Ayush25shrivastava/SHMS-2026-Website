@@ -309,7 +309,7 @@ $shmsNavPage = 'index';
         </div>
         <div class="at-a-glance-item">
           <span class="at-a-glance-label">Abstract deadline</span>
-          <span class="at-a-glance-value">30 Jun 2026</span>
+          <span class="at-a-glance-value">10 Aug 2026</span>
         </div>
         <div class="at-a-glance-item">
           <span class="at-a-glance-label">Expected delegates</span>
