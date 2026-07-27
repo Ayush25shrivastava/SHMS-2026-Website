@@ -51,8 +51,8 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
         <thead>
           <tr>
             <th>Category</th>
-            <th>Early Bird<br><small>(by Sept&nbsp;15)</small></th>
-            <th>Regular<br><small>(after Sept&nbsp;15)</small></th>
+            <th>Early Bird<br><small>(by Sept&nbsp;25)</small></th>
+            <th>Regular<br><small>(after Sept&nbsp;25)</small></th>
           </tr>
         </thead>
         <tbody>
@@ -239,9 +239,9 @@ $shmsRegQrExists = is_readable($shmsRegQrPath);
       <h2 id="includes">What is included?</h2>
       <ul>
         <li>Access to all technical sessions, keynote lectures and panel discussions</li>
-        <li>Conference kit, proceedings (USB) and certificate of participation</li>
+        <li>Conference kit, and certificate of participation</li>
         <li>Lunch and tea/coffee breaks for all three days</li>
-        <li>Welcome reception and conference banquet</li>
+        <li>Conference banquet</li>
         <li>Exhibition access and networking opportunities</li>
       </ul>
       <p>For any queries regarding registration or payment matching, contact the conference secretariat at

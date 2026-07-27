@@ -235,7 +235,7 @@ $shmsNavPage = 'index';
           </tr>
           <tr>
             <td>Full Paper Submission Deadline</td>
-            <td>September 15,&nbsp;2026<div><strong>(*If Authors wish to forward the paper for consideration in Proceedings/Journal Article)</strong></div></td>
+            <td>September 15,&nbsp;2026</td>
           </tr>
           <!-- <tr>
             <td>Notification of Paper Acceptance</td>

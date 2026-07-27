@@ -216,7 +216,7 @@ $shmsNavPage = 'schedule';
         </div>
       </div>
 
-      <div style="text-align: center; max-width: 900px; margin: 4rem auto 2rem; padding: 0 1rem;">
+      <!-- <div style="text-align: center; max-width: 900px; margin: 4rem auto 2rem; padding: 0 1rem;">
         <h3 style="color: var(--color-primary-800); font-weight: 700; font-size: 1.5rem; line-height: 1.6; margin: 0;">
           What is included?
         </h3>
@@ -238,7 +238,7 @@ $shmsNavPage = 'schedule';
         <div class="notice-box notice-box--industry" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
           <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Exhibition access and networking opportunities</h4>
         </div>
-      </div>
+      </div> -->
       
       <div style="text-align: center; max-width: 900px; margin: 4rem auto 2rem; padding: 0 1rem;">
         <h3 style="color: var(--color-primary-800); font-weight: 700; font-size: 1.5rem; line-height: 1.6; margin: 0;">
