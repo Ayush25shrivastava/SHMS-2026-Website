@@ -303,7 +303,7 @@ $errList = (!$useGoogle && is_array($shmsContactFeedback) && isset($shmsContactF
         <div class="shms-contact-card">
           <h3 class="shms-contact-card__title">Phone</h3>
           <p>Conference secretariat</p>
-          <a class="shms-contact-card__link" href="tel:+919783750870">+91-9783750870</a>
+          <a class="shms-contact-card__link" href="tel:+919783750870">+91-9783750870</a><p>(Dr. Bharat Rajan)</p>
         </div>
       </aside>
     </div>
