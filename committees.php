@@ -36,7 +36,7 @@ $shmsNavPage = 'committees';
         </tr>
       </thead>
       <tbody>
-        <tr><td>Prof. Rama Shanker Verma</td><td>Patron</td><td>Director, MNNIT Allahabad, Prayagraj, India</td></tr>
+        <tr><td>Prof. Umamaheshwar Rao Karanam</td><td>Patron</td><td>Director, MNNIT Allahabad, Prayagraj, India</td></tr>
         <tr><td>Prof. Rama Shanker</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
         <tr><td>Dr. Varun Singh</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
         <tr><td>Dr. Snehal K</td><td>Joint Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
