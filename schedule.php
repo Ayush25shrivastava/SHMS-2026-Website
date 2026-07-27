@@ -23,11 +23,11 @@ $shmsNavPage = 'schedule';
 
     <section class="page-heading" id="page-content">
       <h1>Program Schedule</h1>
-      <p>Three Days of Keynote Lectures, Technical Sessions, Panels and Networking.</p>
+      <!-- <p>Three Days of Keynote Lectures, Technical Sessions, Panels and Networking.</p> -->
     </section>
 
     <section>
-      <h2 id="day1">Day 1 – October 15, 2026</h2>
+      <!-- <h2 id="day1">Day 1 – October 15, 2026</h2>
       <table>
         <thead>
           <tr>
@@ -188,7 +188,63 @@ $shmsNavPage = 'schedule';
             <td>Technical Tour: Sangam (Triveni) & Heritage Sites of Prayagraj (optional)</td>
           </tr>
         </tbody>
-      </table>
+      </table> -->
+      <div style="text-align: center; max-width: 900px; margin: 2rem auto 3rem; padding: 0 1rem;">
+        <h3 style="color: var(--color-primary-800); font-weight: 700; font-size: 1.35rem; line-height: 1.6; margin: 0;">
+          The program will feature followings from international and national speakers with many more SHMS related exciting interaction opportunities:
+        </h3>
+      </div>
+
+      <div class="submission-grid" style="gap: 1.5rem; max-width: 900px; margin: 0 auto; padding: 0 1rem;">
+        <div class="notice-box" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">5+ Keynotes</h4>
+        </div>
+        <div class="notice-box notice-box--academic" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">5+ Expert Lecture</h4>
+        </div>
+        <div class="notice-box notice-box--industry" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">10+ Parallel Technical and Poster Sessions</h4>
+        </div>
+        <div class="notice-box" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">2+ Panel Discussions</h4>
+        </div>
+        <div class="notice-box notice-box--academic" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Industry Exhibition Visits</h4>
+        </div>
+        <div class="notice-box notice-box--industry" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Conference Banquet</h4>
+        </div>
+      </div>
+
+      <div style="text-align: center; max-width: 900px; margin: 4rem auto 2rem; padding: 0 1rem;">
+        <h3 style="color: var(--color-primary-800); font-weight: 700; font-size: 1.5rem; line-height: 1.6; margin: 0;">
+          What is included?
+        </h3>
+      </div>
+
+      <div class="submission-grid" style="gap: 1.5rem; max-width: 900px; margin: 0 auto; padding: 0 1rem;">
+        <div class="notice-box notice-box--academic" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Access to all technical sessions, keynote lectures and panel discussions</h4>
+        </div>
+        <div class="notice-box notice-box--industry" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Conference kit, and certificate of participation</h4>
+        </div>
+        <div class="notice-box" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Lunch and tea/coffee breaks for all three days</h4>
+        </div>
+        <div class="notice-box notice-box--academic" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Conference banquet</h4>
+        </div>
+        <div class="notice-box notice-box--industry" style="margin: 0; padding: 1.5rem; display: flex; align-items: center; justify-content: center; text-align: center;">
+          <h4 style="margin: 0; font-size: 1.15rem; color: var(--color-primary-900);">Exhibition access and networking opportunities</h4>
+        </div>
+      </div>
+      
+      <div style="text-align: center; max-width: 900px; margin: 4rem auto 2rem; padding: 0 1rem;">
+        <h3 style="color: var(--color-primary-800); font-weight: 700; font-size: 1.5rem; line-height: 1.6; margin: 0;">
+          The Detailed Program: To be Declared Soon...
+        </h3>
+      </div>
     </section>
 
   </main>

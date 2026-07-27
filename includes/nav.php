@@ -72,11 +72,11 @@ $__shmsNav = isset($shmsNavPage) ? $shmsNavPage : '';
           </ul>
         </li>
         <li><a href="schedule.php#page-content"<?php echo shms_nav_link_attrs($__shmsNav, 'schedule'); ?>>Program</a>
-          <ul>
+          <!-- <ul>
             <li><a href="schedule.php#day1">Day 1</a></li>
             <li><a href="schedule.php#day2">Day 2</a></li>
             <li><a href="schedule.php#day3">Day 3</a></li>
-          </ul>
+          </ul> -->
         </li>
         <li><a href="call.php#page-content"<?php echo shms_nav_link_attrs($__shmsNav, 'call'); ?>>Call for Papers</a>
           <ul>
