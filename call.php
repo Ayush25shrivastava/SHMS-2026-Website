@@ -48,7 +48,7 @@ $shmsNavPage = 'call';
           </tr>
           <tr>
             <td>Full Paper Submission Deadline</td>
-            <td>September 15,&nbsp;2026<div><strong>(*If Authors wish to forward the paper for consideration in Proceedings/Journal Article)</strong></div></td>
+            <td>September 15,&nbsp;2026</td>
           </tr>
           <!-- <tr>
             <td>Notification of Paper Acceptance</td>
@@ -69,16 +69,13 @@ $shmsNavPage = 'call';
       <div class="submission-grid">
         <div class="notice-box notice-box--academic">
           <p class="notice-box-title" style="text-align: center;">Academic Submission</p>
-          <!-- <p class="notice-box-text">
-            <strong>Step 1: </strong>Submit a 300–500 word academic abstract, including the title, list of authors, institutional affiliations, and relevant keywords.
+          <p class="notice-box-text">
+            <strong>Step 1: </strong>Submit 300-500 words academic abstract including title, authors, affiliations and keywords.
             <br />
-            <strong>Step 2: </strong>Upon successful peer-review and official acceptance of the abstract, authors will be invited to present their research at the conference.
-            <br />
-            <strong>Step 3: </strong>Following the conference, authors of selected abstracts will be invited to submit full-length papers. Peer-reviewed and accepted full papers will be published in the journal or official conference proceedings.
-            <br />
-          </p> -->
-          
-          <img src="assets/images/academic abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;">
+            <strong>Step 2: </strong>After abstract review and acceptance, submit full paper.
+            <br>
+          </p>
+          <!-- <img src="assets/images/academic abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;"> -->
           <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
             <button
               onclick="window.open('https://docs.google.com/document/d/14r82RQS1PiAMdbCEMuyr3mWpDo-WVvGQ/edit?usp=sharing&ouid=109414172089836850540&rtpof=true&sd=true', '_blank')"
@@ -92,13 +89,12 @@ $shmsNavPage = 'call';
         </div>
         <div class="notice-box notice-box--industry">
           <p class="notice-box-title" style="text-align: center;">Industry Submission</p>
-          <!-- <p class="notice-box-text">
-            <strong>Step 1: </strong>Submit the extended industrial abstract using the Industrial Track Submission
-            Template.
+          <p class="notice-box-text">
+            <strong>Step 1: </strong>Submit the extended industrial abstract using the Industrial Track Submission Template.
             <br />
-            <strong>Step 2: </strong>Upon successful peer-review and official acceptance of the abstract, authors will be invited to present their research at the conference.
-          </p> -->
-          <img src="assets/images/industrial abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;">
+            <strong>Step 2: </strong>The acceptance will be notified to the authors via email.
+          </p>
+          <!-- <img src="assets/images/industrial abstract.png" alt="Academic Abstract" width="400px" style="margin: 0 auto; display: block;"> -->
           <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
             <button
               onclick="window.open('https://docs.google.com/document/d/1h93zYfoAe0RhsXXgU4tmKcYAGYUPvZ3h/edit?usp=sharing&ouid=109414172089836850540&rtpof=true&sd=true', '_blank')"
@@ -106,19 +102,7 @@ $shmsNavPage = 'call';
               Track Extended Abstract Template</button>
           </div>
         </div>
-        <div class="notice-box notice-box--full notice-box--general">
-          <p class="notice-box-title">General Guidelines</p>
-          <ul class="notice-box-text">
-            <li>All submissions must be original and not previously published.</li>
-            <li>Papers will be peer‑reviewed by at least two reviewers.</li>
-            <li>Submit via <strong>Microsoft CMT</strong> — the conference submission link will be published here when
-              the
-              portal opens.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="notice-box easychair-box notice-box--peer-review" id="peer-review">
+        <div class="notice-box easychair-box notice-box--peer-review" id="peer-review" style="grid-column: 1 / -1;">
         <div class="responsive-flex-container">
           <div>
             <p class="notice-box-title">Submissions &amp; peer review</p>
@@ -140,6 +124,38 @@ $shmsNavPage = 'call';
           </div>
         </div>
       </div>
+        <div style="grid-column: 1 / -1;">
+          <h2 style="margin-top: 2rem;">Submission Guidelines</h2> 
+        </div>
+        <div class="notice-box notice-box--full notice-box--academic">
+          <p class="notice-box-title">Academic Submission Guidelines</p>
+          <ul class="notice-box-text">
+            <li>Participants from academic institutions and organisations other than industry are required to submit an abstract.</li>
+            <li>Following acceptance of the abstract, they are required to submit a full-length paper for consideration in the conference proceedings.</li>
+            <li>Selected papers may be published in the <em>Journal of Intelligent Material Systems and Structures (SAGE, <a href="https://journals.sagepub.com/home/JIM">https://journals.sagepub.com/home/JIM</a>)</em> or <em>Urban Lifeline (Springer Nature, <a href="https://link.springer.com/journal/44285">https://link.springer.com/journal/44285</a>)</em>, as detailed on the conference website.</li>
+          </ul>
+        </div>
+        <div class="notice-box notice-box--full notice-box--industry">
+          <p class="notice-box-title">Industry Submission Guidelines</p>
+          <ul class="notice-box-text">
+            <li>Participants from industry are required to submit an extended abstract using the Industrial Track Submission Template.</li>
+            <li>Following acceptance of the abstract, they are invited to present their work at the conference.</li>
+            <li>Submission of a full-length paper is optional for industry participants; those who wish to do so may submit one for consideration in the conference proceedings, and selected papers may be published in the <em>Journal of Intelligent Material Systems and Structures (SAGE)</em> or <em>Urban Lifeline (Springer Nature)</em>, as detailed on the conference website.</li>
+          </ul>
+        </div>
+        <div class="notice-box notice-box--full notice-box--general">
+          <p class="notice-box-title">General Guidelines</p>
+          <ul class="notice-box-text">
+            <li>All submissions must be original and not previously published.</li>
+            <li>Papers will be peer‑reviewed by at least two reviewers.</li>
+            <li>Submit via <strong>Microsoft CMT</strong> — the conference submission link will be published here when
+              the
+              portal opens.</li>
+          </ul>
+        </div>
+      </div>
+
+      
 
       <div style="text-align: center;">
         <h2 id="publication">Publication Opportunities</h2>
