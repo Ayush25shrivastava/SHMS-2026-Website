@@ -227,15 +227,15 @@ $shmsNavPage = 'index';
         <tbody>
           <tr>
             <td>Abstract Submission Deadline</td>
-            <td>August 10, 2026</td>
-          </tr>
-          <tr>
-            <td>Notification of Abstract Acceptance</td>
             <td>August 15, 2026</td>
           </tr>
           <tr>
+            <td>Notification of Abstract Acceptance</td>
+            <td>August 20, 2026</td>
+          </tr>
+          <tr>
             <td>Full Paper Submission Deadline</td>
-            <td>September 15,&nbsp;2026</td>
+            <td>September 20,&nbsp;2026</td>
           </tr>
           <!-- <tr>
             <td>Notification of Paper Acceptance</td>
@@ -279,7 +279,7 @@ $shmsNavPage = 'index';
       <h2>Ready to Join SHMS‑2026?</h2>
       <p>
         Register now for the International Conference on Next Gen Structural Health Monitoring.
-        Early-bird registration closes on September 15, 2026.
+        Early-bird registration closes on September 25, 2026.
       </p>
       <div class="home-final-cta-actions">
         <a class="home-final-btn home-final-btn--primary" href="registration.php#page-content">Register Now</a>
@@ -309,7 +309,7 @@ $shmsNavPage = 'index';
         </div>
         <div class="at-a-glance-item">
           <span class="at-a-glance-label">Abstract deadline</span>
-          <span class="at-a-glance-value">10 Aug 2026</span>
+          <span class="at-a-glance-value">15 Aug 2026</span>
         </div>
         <div class="at-a-glance-item">
           <span class="at-a-glance-label">Expected delegates</span>
