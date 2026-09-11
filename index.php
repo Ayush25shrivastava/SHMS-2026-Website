@@ -33,6 +33,17 @@ $shmsNavPage = 'index';
   <?php require dirname(__FILE__) . '/includes/nav.php'; ?>
 
   <main>
+    <!-- Top Announcement Banner (Home Page Only) -->
+    <div class="home-announcement-banner" aria-label="Important Announcements">
+      <div class="home-announcement-container">
+        <ul class="home-announcement-list">
+          <li>Accepted Papers Full Submission Link is Active on <a href="https://cmt3.research.microsoft.com/User/Login?ReturnUrl=%2FSHMS2026%2FSubmission%2FIndex" target="_blank" rel="noopener noreferrer">SHMS Microsoft CMT Portal</a>.</li>
+          <li>Register Early Bird (Before 25th September 2026) for Benefits in <a href="registration.php#page-content">Registration Fee</a>.</li>
+          <li>In case of any query please use <a href="contact.php#page-content">Contact Us</a> on Portal.</li>
+        </ul>
+      </div>
+    </div>
+
     <?php require dirname(__FILE__) . '/includes/hero-banner.php'; ?>
 
     <section class="logo-strip" id="page-content" aria-label="Conference partner logos">

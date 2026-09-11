@@ -651,6 +651,63 @@ body>nav ul li ul li a:focus {
   /* fallback behind banner edges if needed */
 }
 
+/* Home Page Announcement Banner (visible only on index.php below navbar) */
+.home-announcement-banner {
+  margin-top: var(--nav-height);
+  width: 100%;
+  background: linear-gradient(135deg, #0b1220 0%, #111f35 50%, #0f172a 100%);
+  border-bottom: 2px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 16px rgba(2, 6, 23, 0.25);
+  color: #f8fafc;
+  padding: 0.45rem 1.15rem;
+  box-sizing: border-box;
+}
+
+.home-announcement-banner + .hero {
+  margin-top: 0;
+}
+
+.home-announcement-container {
+  max-width: var(--layout-max);
+  margin: 0 auto;
+}
+
+.home-announcement-list {
+  text-align: left;
+  margin: 0;
+  padding-left: 1.15rem;
+  list-style-type: disc;
+  font-family: var(--font-sans);
+  font-size: clamp(0.825rem, 0.85vw + 0.35rem, 0.925rem);
+  line-height: 1.4;
+  color: #e2e8f0;
+}
+
+.home-announcement-list li {
+  margin-bottom: 0.2rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.home-announcement-list li:last-child {
+  margin-bottom: 0;
+}
+
+.home-announcement-list a {
+  color: var(--color-accent, #38bdf8);
+  text-decoration: underline;
+  text-underline-offset: 2.5px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.home-announcement-list a:hover,
+.home-announcement-list a:focus {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+
 .hero-image {
   width: 100%;
   max-width: 100%;
