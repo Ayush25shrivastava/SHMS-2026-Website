@@ -39,12 +39,12 @@ $shmsNavPage = 'call';
         </thead>
         <tbody>
           <tr>
-            <td>Abstract Submission Deadline</td>
-            <td>August 15, 2026</td>
+            <td><strike>Abstract Submission Deadline</strike></td>
+            <td><strike>August 15, 2026</strike></td>
           </tr>
           <tr>
-            <td>Notification of Abstract Acceptance</td>
-            <td>August 20, 2026</td>
+            <td><strike>Notification of Abstract Acceptance</strike></td>
+            <td><strike>August 20, 2026</strike></td>
           </tr>
           <tr>
             <td>Full Paper Submission Deadline</td>
@@ -119,8 +119,7 @@ $shmsNavPage = 'call';
           </div>
           <div>
             <button onclick="window.open('https://cmt3.research.microsoft.com/SHMS2026/Submission/Index', '_blank')"
-              class="template-btn">Submit
-              Your Abstract/Full Paper</button>
+              class="template-btn">Submit Full Paper</button>
           </div>
         </div>
       </div>
