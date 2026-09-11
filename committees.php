@@ -39,8 +39,8 @@ $shmsNavPage = 'committees';
         <tr><td>Prof. Umamaheshwar Rao Karanam</td><td>Patron</td><td>Director, MNNIT Allahabad, Prayagraj, India</td></tr>
         <tr><td>Prof. Rama Shanker</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
         <tr><td>Dr. Varun Singh</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
-        <tr><td>Dr. Snehal K</td><td>Joint Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
-        <tr><td>Dr. Bharat Rajan</td><td>Joint Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
+        <tr><td>Dr. Snehal K</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
+        <tr><td>Dr. Bharat Rajan</td><td>Organising Secretary</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
         <tr><td>Prof. L.K. Mishra</td><td>Conference Chair</td><td>Department of Civil Engineering, MNNIT Allahabad, India</td></tr>
         <tr><td>Prof. Suresh Bhalla</td><td>President, ISHMS</td><td>Department of Civil Engineering, IIT Delhi, India</td></tr>
         <tr><td>Dr. Navneet Kaur</td><td>Vice President, ISHMS</td><td>CSIR–Central Road Research Institute, Delhi, India</td></tr>

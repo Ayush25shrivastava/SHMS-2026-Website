@@ -45,11 +45,11 @@ $shmsContactFeedback = shms_contact_uses_google_form() ? null : shms_contact_han
           Department of Civil Engineering, MNNIT Allahabad<br>
           <!-- Email: <a href="mailto:shms2026@mnnit.ac.in" style="color:#004a8f;">shms2026@mnnit.ac.in</a></p> -->
 
-        <h2 id="organising-contact">Joint Organising Committee (MNNIT Allahabad)</h2>
-        <p><strong>Dr. Snehal K</strong> – Joint Conference Secretary<br>
+        <!-- <h2 id="organising-contact">Joint Organising Committee (MNNIT Allahabad)</h2> -->
+        <p><strong>Dr. Snehal K</strong> – Conference Secretary<br>
           Department of Civil Engineering, MNNIT Allahabad<br>
           <!-- Email: <a href="mailto:shms2026@mnnit.ac.in" style="color:#004a8f;">shms2026@mnnit.ac.in</a></p> -->
-        <p><strong>Dr. Bharat Rajan</strong> – Joint Conference Secretary<br>
+        <p><strong>Dr. Bharat Rajan</strong> – Conference Secretary<br>
           Department of Civil Engineering, MNNIT Allahabad<br>
           <!-- Email: <a href="mailto:shms2026@mnnit.ac.in" style="color:#004a8f;">shms2026@mnnit.ac.in</a></p> -->
 
