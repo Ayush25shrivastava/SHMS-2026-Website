@@ -43,7 +43,7 @@ $__shmsFooterThemeShort = $__shmsFooterThemeDark ? 'Light mode' : 'Dark mode';
       <div class="site-footer-inner">
         <div class="site-footer-col site-footer-col--brand">
           <p class="site-footer-brand">SHMS‑2026</p>
-          <p class="site-footer-tagline">International Conference on Next Gen Structural Health Monitoring — smart materials, AI‑ML, and resilient infrastructure.</p>
+          <p class="site-footer-tagline">International Conference on Next Generation Structural Health Monitoring for Engineering Structures, powered by AI-ML &amp; Smart Materials </p>
           <p class="site-footer-dates">15–17 October 2026 · Prayagraj, India</p>
         </div>
         <nav class="site-footer-col site-footer-col--links" aria-labelledby="site-footer-quick-heading">
