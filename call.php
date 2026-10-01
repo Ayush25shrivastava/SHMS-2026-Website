@@ -51,12 +51,12 @@ $shmsNavPage = 'call';
             <td>August 31,&nbsp;2026</td>
           </tr> -->
           <tr>
-            <td style="color: red;">Early Bird Registration Deadline</td>
-            <td style="color: red;">September 25,&nbsp;2026</td>
+            <td><strike>Early Bird Registration Deadline</strike></td>
+            <td><strike>September 25,&nbsp;2026</strike></td>
           </tr>
           <tr>
             <td style="color: red;">Full Paper Submission Deadline</td>
-            <td style="color: red;">September 30,&nbsp;2026</td>
+            <td style="color: red;">October 10,&nbsp;2026</td>
           </tr>
           <tr>
             <td>Conference Dates</td>

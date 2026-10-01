@@ -33,19 +33,8 @@ $shmsNavPage = 'index';
   <?php require dirname(__FILE__) . '/includes/nav.php'; ?>
 
   <main>
-    <!-- Top Announcement Banner (Home Page Only) -->
-    <div class="home-announcement-banner" aria-label="Important Announcements">
-      <div class="home-announcement-container">
-        <ul class="home-announcement-list">
-          <li>The Full Paper Submission Deadline has been extended to 30th September 2026.</li>
-          <li>Accepted Papers' Full Paper Submission Link is Active on <a href="https://cmt3.research.microsoft.com/User/Login?ReturnUrl=%2FSHMS2026%2FSubmission%2FIndex" target="_blank" rel="noopener noreferrer">SHMS Microsoft CMT Portal</a>. Upload the Full Paper in the Revision tab, on Author's Dashboard.</li>
-          <li>Register Early Bird (Before 25th September 2026) for Benefits in <a href="registration.php#page-content">Registration Fee</a>.</li>
-          <li>In case of any query please use <a href="contact.php#page-content">Contact Us</a> on the Portal.</li>
-        </ul>
-      </div>
-    </div>
-
     <?php require dirname(__FILE__) . '/includes/hero-banner.php'; ?>
+
 
     <section class="logo-strip" id="page-content" aria-label="Conference partner logos">
       <div class="logo-strip-item">
@@ -250,12 +239,12 @@ $shmsNavPage = 'index';
             <td>August 31,&nbsp;2026</td>
           </tr> -->
           <tr>
-            <td style="color: red;">Early Bird Registration Deadline</td>
-            <td style="color: red;">September 25,&nbsp;2026</td>
+            <td><strike>Early Bird Registration Deadline</strike></td>
+            <td><strike>September 25,&nbsp;2026</strike></td>
           </tr>
           <tr>
             <td style="color: red;">Full Paper Submission Deadline</td>
-            <td style="color: red;">September 30,&nbsp;2026</td>
+            <td style="color: red;">October 10,&nbsp;2026</td>
           </tr>
           <tr>
             <td>Conference Dates</td>

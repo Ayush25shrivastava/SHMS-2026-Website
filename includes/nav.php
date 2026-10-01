@@ -150,3 +150,15 @@ $__shmsNav = isset($shmsNavPage) ? $shmsNavPage : '';
       });
     });
   </script>
+
+  <!-- Top Announcement Banner -->
+  <div class="home-announcement-banner" aria-label="Important Announcements">
+    <div class="home-announcement-container">
+      <ul class="home-announcement-list">
+        <li>The Full Paper Submission Deadline has been extended to 10th October 2026.</li>
+        <li>Accepted Papers' Full Paper Submission Link is Active on <a href="https://cmt3.research.microsoft.com/User/Login?ReturnUrl=%2FSHMS2026%2FSubmission%2FIndex" target="_blank" rel="noopener noreferrer">SHMS Microsoft CMT Portal</a>. Upload the Full Paper in the Revision tab, on Author's Dashboard.</li>
+        <li>Please share your accommodation and travel details on this <a href="https://forms.gle/vBY1g1Ha3kzVderW7" target="_blank" rel="noopener noreferrer">Google Form</a>.</li>
+        <li>In case of any query please use <a href="contact.php#page-content">Contact Us</a> on the Portal.</li>
+      </ul>
+    </div>
+  </div>

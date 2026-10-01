@@ -642,8 +642,8 @@ body>nav ul li ul li a:focus {
 
 /* Hero section — full width of the viewport (banner spans edge to edge above page heading) */
 .hero {
-  margin-top: var(--nav-height);
-  /* offset for fixed navbar */
+  margin-top: 0;
+  /* offset for fixed navbar now handled by announcement banner */
   width: 100%;
   padding: 0;
   box-sizing: border-box;
@@ -651,7 +651,7 @@ body>nav ul li ul li a:focus {
   /* fallback behind banner edges if needed */
 }
 
-/* Home Page Announcement Banner (visible only on index.php below navbar) */
+/* Home Page Announcement Banner (visible on all pages below navbar) */
 .home-announcement-banner {
   margin-top: var(--nav-height);
   width: 100%;
@@ -661,10 +661,6 @@ body>nav ul li ul li a:focus {
   color: #f8fafc;
   padding: 0.45rem 1.15rem;
   box-sizing: border-box;
-}
-
-.home-announcement-banner + .hero {
-  margin-top: 0;
 }
 
 .home-announcement-container {
