@@ -155,8 +155,11 @@ $__shmsNav = isset($shmsNavPage) ? $shmsNavPage : '';
   <div class="home-announcement-banner" aria-label="Important Announcements">
     <div class="home-announcement-container">
       <ul class="home-announcement-list">
-        <li>The Full Paper Submission Deadline has been extended to 10th October 2026.</li>
-        <li>Accepted Papers' Full Paper Submission Link is Active on <a href="https://cmt3.research.microsoft.com/User/Login?ReturnUrl=%2FSHMS2026%2FSubmission%2FIndex" target="_blank" rel="noopener noreferrer">SHMS Microsoft CMT Portal</a>. Upload the Full Paper in the Revision tab, on Author's Dashboard.</li>
+        <li><a href="https://drive.google.com/file/d/1uTrQYwt4VThuzY20qt7-tQ9H_YDWNaLZ/view?usp=sharing" target="_blank" rel="noopener noreferrer">SHMS 2026 Conference Schedule</a> and <a href="https://drive.google.com/file/d/1oRmLhz5bOxmKgm0FCE77rq3TB-wGmQ1B/view?usp=sharing" target="_blank" rel="noopener noreferrer">Venue & Room Allotment Details</a> are available now.</li>
+        <li>For SHMS 2026 presentation template, <a href="https://docs.google.com/presentation/d/1E8I0z0RDTEM5Z1NibxsGryjeJTkkZu50/edit?usp=sharing&ouid=109414172089836850540&rtpof=true&sd=true" target="_blank" rel="noopener noreferrer">click here</a>.</li>
+        <li>Kindly submit your presentations in the google form provided <a href="https://docs.google.com/forms/d/e/1FAIpQLSeLMm3UU86j8XQCj8mtDqpW4VhaLDWvWjuMf66UXLn_3w18kw/viewform" target="_blank" rel="noopener noreferrer">here</a>. Please ensure to submit it in .pptx format.</li>
+        <!-- <li>The Full Paper Submission Deadline has been extended to 10th October 2026.</li>
+        <li>Accepted Papers' Full Paper Submission Link is Active on <a href="https://cmt3.research.microsoft.com/User/Login?ReturnUrl=%2FSHMS2026%2FSubmission%2FIndex" target="_blank" rel="noopener noreferrer">SHMS Microsoft CMT Portal</a>. Upload the Full Paper in the Revision tab, on Author's Dashboard.</li> -->
         <li>Please share your accommodation and travel details on this <a href="https://forms.gle/vBY1g1Ha3kzVderW7" target="_blank" rel="noopener noreferrer">Google Form</a>.</li>
         <li>In case of any query please use <a href="contact.php#page-content">Contact Us</a> on the Portal.</li>
       </ul>
