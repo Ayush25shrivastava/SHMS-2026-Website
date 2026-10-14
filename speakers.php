@@ -81,21 +81,23 @@ $shmsNavPage = 'speakers';
             resilient infrastructure.</p>
         </div>
         <!-- <div class="speaker">
-        <img src="expert_photos/k-lakshmi.jpg" alt="Dr. K. Lakshmi">
-        <h3>Dr. K. Lakshmi</h3>
-        <p>CSIR‑Structural Engineering Research Centre (CSIR‑SERC), Chennai, India</p>
-        <p>Scientist at the Structural Health Monitoring Laboratory specialising in vibration‑based damage detection,
-          vehicle‑bound sensor techniques for bridge monitoring, optimal sensor placement and metaheuristic optimisation.
-          Recipient of the Ramaiah Best Paper Prize (2019).</p>
-      </div>
-      <div class="speaker">
-        <img src="expert_photos/naveet-kaur.jpg" alt="Dr. Naveet Kaur">
-        <h3>Dr. Naveet Kaur</h3>
-        <p>CSIR‑Central Road Research Institute (CSIR‑CRRI), New Delhi, India</p>
-        <p>Senior scientist and Vice President of ISHMS. She is an expert in piezoelectric energy harvesting and structural
-          health monitoring using PZT transducers. Inventor of the Vibro‑Integrity Sensing Device (VInSD) for
-          multipurpose non‑destructive evaluation of bridge structures.</p>
-      </div> -->
+          <img src="expert_photos/k-lakshmi.jpg" alt="Dr. K. Lakshmi">
+          <h3>Dr. K. Lakshmi</h3>
+          <p>CSIR‑Structural Engineering Research Centre (CSIR‑SERC), Chennai, India</p>
+          <p>Scientist at the Structural Health Monitoring Laboratory specialising in vibration‑based damage detection,
+            vehicle‑bound sensor techniques for bridge monitoring, optimal sensor placement and metaheuristic
+            optimisation.
+            Recipient of the Ramaiah Best Paper Prize (2019).</p>
+        </div> -->
+        <div class="speaker">
+          <img src="expert_photos/naveet-kaur.jpg" alt="Dr. Naveet Kaur">
+          <h3>Dr. Naveet Kaur</h3>
+          <p>CSIR‑Central Road Research Institute (CSIR‑CRRI), New Delhi, India</p>
+          <p>Senior scientist and Vice President of ISHMS. She is an expert in piezoelectric energy harvesting and
+            structural
+            health monitoring using PZT transducers. Inventor of the Vibro‑Integrity Sensing Device (VInSD) for
+            multipurpose non‑destructive evaluation of bridge structures.</p>
+        </div>
         <!-- <div class="speaker">
         <img src="expert_photos/pilate-moyo.jpg" alt="Prof. Pilate Moyo">
         <h3>Prof. Pilate Moyo</h3>
@@ -113,7 +115,6 @@ $shmsNavPage = 'speakers';
           sustainable urban systems.</p>
       </div> -->
       </div>
-      <h4 style="text-align: center; margin-top: 12px;">Many More National and International Keynotes Will Be Added Soon...</h4>
     </section>
   </main>
 
