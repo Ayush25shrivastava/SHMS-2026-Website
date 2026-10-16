@@ -80,7 +80,7 @@ $shmsNavPage = 'speakers';
             structural health monitoring (SHM), sensor development, and material characterization for safer and more
             resilient infrastructure.</p>
         </div>
-        <!-- <div class="speaker">
+        <div class="speaker">
           <img src="expert_photos/k-lakshmi.jpg" alt="Dr. K. Lakshmi">
           <h3>Dr. K. Lakshmi</h3>
           <p>CSIR‑Structural Engineering Research Centre (CSIR‑SERC), Chennai, India</p>
@@ -88,7 +88,7 @@ $shmsNavPage = 'speakers';
             vehicle‑bound sensor techniques for bridge monitoring, optimal sensor placement and metaheuristic
             optimisation.
             Recipient of the Ramaiah Best Paper Prize (2019).</p>
-        </div> -->
+        </div>
         <div class="speaker">
           <img src="expert_photos/naveet-kaur.jpg" alt="Dr. Naveet Kaur">
           <h3>Dr. Naveet Kaur</h3>
